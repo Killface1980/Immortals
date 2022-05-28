@@ -1,0 +1,80 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using UnityEngine;
+using Verse;
+using Verse.Sound;
+using RimWorld;
+
+namespace Immortals
+{
+    [StaticConstructorOnStartup]
+    class WeatherEvent_Quickening : WeatherEvent_LightningFlash
+    {
+        public WeatherEvent_Quickening(Map map) : base(map)
+        {
+
+        }
+
+        public WeatherEvent_Quickening(Map map, IntVec3 forcedLocation, int newDamage, bool sound = true) : base(map)
+        {
+            this.strikeLoc = forcedLocation;
+            this.sound = sound;
+            this.damage = newDamage;
+        }
+
+
+        public override void FireEvent()
+        {
+            base.FireEvent();
+            if (!this.strikeLoc.IsValid)
+            {
+                this.strikeLoc = CellFinderLoose.RandomCellWith((IntVec3 sq) => sq.Standable(this.map) && !this.map.roofGrid.Roofed(sq), this.map, 1000);
+            }
+            this.boltMesh = LightningBoltMeshPool.RandomBoltMesh;
+            if (!this.strikeLoc.Fogged(this.map))
+            {
+                SoundDef explosionSound = null;
+                if (!this.sound)
+                {
+                    explosionSound = new SoundDef();
+                }
+
+                GenExplosion.DoExplosion(this.strikeLoc, this.map, 2f, DamageDefOf.Smoke, null, this.damage, -1f, explosionSound, null, null, null, null, 0f, 1, false, null, 0f, 1, 0f, false);
+                Vector3 loc = this.strikeLoc.ToVector3Shifted();
+                for (int i = 0; i < 4; i++)
+                {
+                    FleckMaker.ThrowSmoke(loc, this.map, 1.5f);
+                    FleckMaker.ThrowMicroSparks(loc, this.map);
+                    FleckMaker.ThrowLightningGlow(loc, this.map, 1.5f);
+                    //MoteMaker.ThrowSmoke(loc, this.map, 1.5f);
+                    //MoteMaker.ThrowMicroSparks(loc, this.map);
+                    //MoteMaker.ThrowLightningGlow(loc, this.map, 1f);
+                }
+            }
+            if (this.sound)
+            {
+                SoundInfo info = SoundInfo.InMap(new TargetInfo(this.strikeLoc, this.map, false), MaintenanceType.None);
+                SoundDefOf.Thunder_OnMap.PlayOneShot(info);
+            }
+
+
+        }
+
+        public override void WeatherEventDraw()
+        {
+            Graphics.DrawMesh(this.boltMesh, this.strikeLoc.ToVector3ShiftedWithAltitude(AltitudeLayer.Weather), Quaternion.identity, FadedMaterialPool.FadedVersionOf(WeatherEvent_Quickening.LightningMat, base.LightningBrightness), 0);
+        }
+
+        private IntVec3 strikeLoc = IntVec3.Invalid;
+
+        private Mesh boltMesh;
+
+        private int damage;
+        private bool sound;
+
+        private static readonly Material LightningMat = MatLoader.LoadMat("Weather/LightningBolt", -1);
+
+    }
+}
