@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
 using Verse;
 using RimWorld;
@@ -9,7 +7,7 @@ using RimWorld;
 namespace Immortals
 {
     [HotSwappable]
-    class Designator_ExtractorTrigger : Designator
+    public class Designator_ExtractorTrigger : Designator
     {
 
         public Designator_ExtractorTrigger()
@@ -70,13 +68,16 @@ namespace Immortals
 
             if (Immortals_DesignatorUtility.CanBeUsedToTrigger(t))
             {
-                if (t is Corpse corpse && corpse.InnerPawn.health.hediffSet.GetFirstHediffOfDef(Immortal_Component.immortalHediff) != null)
+                if (t is Corpse corpse && corpse.InnerPawn.IsImmmortal())
                 {
-                    return  Immortals_DesignatorUtility.IsVisibleImmortal(corpse.InnerPawn);                        ;
+                    return true;
+
+                    //return corpse.InnerPawn.IsVisibleImmortal();                        ;
                 }
-                if (t is Pawn pawn && pawn.Downed && pawn.health.hediffSet.GetFirstHediffOfDef(Immortal_Component.immortalHediff) != null)
+                if (t is Pawn pawn && pawn.Downed && pawn.IsImmmortal())
                 {
-                    return Immortals_DesignatorUtility.IsVisibleImmortal(pawn); ;
+                    return true;
+                    //return pawn.IsVisibleImmortal(); ;
                 }
             }
 

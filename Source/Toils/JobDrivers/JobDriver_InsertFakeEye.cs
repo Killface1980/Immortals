@@ -1,18 +1,18 @@
-﻿using System;
+﻿using RimWorld;
 using System.Collections.Generic;
 using Verse;
 using Verse.AI;
-using RimWorld;
 
 namespace Immortals
 {
-    class JobDriver_InsertFakeEye : JobDriver
+    public class JobDriver_InsertFakeEye : JobDriver
     {
-
-        public static HediffDef fakeEyeHediffDef = DefDatabase<HediffDef>.GetNamed("IH_FakeEye");
-        public static HediffDef missingDef = DefDatabase<HediffDef>.GetNamed("MissingBodyPart");
-        public static HediffDef placeHolderDef = DefDatabase<HediffDef>.GetNamed("IH_FakeEyePlaceHolder");
+        // public static HediffDef fakeEyeHediffDef = DefDatabase<HediffDef>.GetNamed("IH_FakeEye");
+        // public static HediffDef placeHolderDef = DefDatabase<HediffDef>.GetNamed("IH_FakeEyePlaceHolder");
         public static BodyPartTagDef sightSource = DefDatabase<BodyPartTagDef>.GetNamed("SightSource");
+
+        // Token: 0x04001EBC RID: 7868
+        private const int DurationTicks = 30;
 
         // Token: 0x170009DE RID: 2526
         // (get) Token: 0x06003523 RID: 13603 RVA: 0x0012E8E8 File Offset: 0x0012CAE8
@@ -29,6 +29,7 @@ namespace Immortals
         {
             return true;
         }
+
 
         // Token: 0x06003525 RID: 13605 RVA: 0x0012E908 File Offset: 0x0012CB08
         public override IEnumerable<Toil> MakeNewToils()
@@ -49,13 +50,12 @@ namespace Immortals
 
             yield return Toils_General.Wait(200, TargetIndex.None).FailOnDestroyedNullOrForbidden(TargetIndex.A).FailOnDestroyedNullOrForbidden(TargetIndex.A).FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch).WithProgressBarToilDelay(TargetIndex.A, false, -0.5f);
 
-
             yield return new Toil
             {
                 initAction = delegate ()
                 {
                     BodyPartRecord part = null;
-                    Hediff placeHolder = this.pawn.health.hediffSet.GetFirstHediffOfDef(placeHolderDef);
+                    Hediff placeHolder = this.pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_FakeEyePlaceHolder);
                     if (placeHolder != null)
                     {
                         part = (placeHolder as FakeEyeHolder_Hediff).place;
@@ -64,7 +64,7 @@ namespace Immortals
                     Hediff missingHediff = null;
                     foreach (Hediff hediff in this.pawn.health.hediffSet.hediffs)
                     {
-                        if (hediff.def == missingDef && hediff.Part == part)
+                        if (hediff.def == HediffDefOf.MissingBodyPart && hediff.Part == part)
                         {
                             missingHediff = hediff;
                             part = hediff.Part;
@@ -73,7 +73,7 @@ namespace Immortals
                     }
                     this.pawn.health.RemoveHediff(missingHediff);
                     this.pawn.health.RemoveHediff(placeHolder);
-                    Hediff newFakeEye = this.pawn.health.AddHediff(fakeEyeHediffDef, part);
+                    Hediff newFakeEye = this.pawn.health.AddHediff(HediffDefOf_Immortals.IH_FakeEye, part);
                     FakeEye_Hediff fakeEyeHediff = newFakeEye as FakeEye_Hediff;
                     fakeEyeHediff.Stuff = this.TargetA.Thing.Stuff;
 
@@ -95,7 +95,7 @@ namespace Immortals
             yield break;
         }
 
-        // Token: 0x04001EBC RID: 7868
-        private const int DurationTicks = 30;
+
+
     }
 }

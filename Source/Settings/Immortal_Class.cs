@@ -1,41 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using Verse;
-using RimWorld;
-using UnityEngine;
-using RimWorld.Planet;
-
 
 namespace Immortals
 {
     public class Immortal_Class : IExposable
     {
-        public bool canBeImmortal = true;
-        public bool canSpawnImmortal = true;
-        public float? immortalChance = null;
+        public bool canBeImmortal           = true;
+        public bool canSpawnImmortal        = true;
+        public bool customHediffSettings    = false;
+        public float? firstDeathHealFactor  = null;
+        public float? healingRate           = null;
+        public bool? healScars              = null;
+        public float? immortalChance        = null;
         public float? immortalChanceVisible = null;
-        public float? immortalTransferOut = null;
-        public float? immortalTransferIn = null;
-        public float? immortalSpawnMin = null;
-        public float? immortalSpawnMax = null;
-        public bool? healScars = null;
-        public float? firstDeathHealFactor = null;
-        public float? healingRate = null;
-        public float? regrowthSpeed = null;
-        public float? regrowthFoodCost = null;
-        public float? regrowthFoodAccumulation = null;
-        public bool customHediffSettings = false;
-        public string name = "IH_Undefined";
-
-        public List<ThingDef> pawnTypes = new();
+        public float? immortalSpawnMax      = null;
+        public float? immortalSpawnMin      = null;
+        public float? immortalTransferIn    = null;
+        public float? immortalTransferOut   = null;
+        public string name                  = "IH_Undefined";
+        public List<ThingDef> pawnTypes     = new();
         public List<string> pawnTypesLoad;
+        public float? regrowthFoodAccumulation = null;
+        public float? regrowthFoodCost = null;
+        public float? regrowthSpeed = null;
 
         public Immortal_Class()
         {
-
         }
+
         public Immortal_Class(string name)
         {
             this.name = name;

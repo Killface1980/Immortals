@@ -1,5 +1,4 @@
-﻿using RimWorld;
-using Verse;
+﻿using Verse;
 
 namespace Immortals.Source
 {
@@ -17,12 +16,14 @@ namespace Immortals.Source
             {
                 return false;
             }
+            
+            return !corpse.InnerPawn.IsImmmortal();
 
-            if (corpse.InnerPawn.health.hediffSet.GetFirstHediffOfDef(Immortal_Component.immortalHediff) == null)
-            {
-                return true;
-            }
-            return false;
+            // if (corpse.InnerPawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Immortal) == null)
+            // {
+            //     return true;
+            // }
+            // return false;
         }
 
     }

@@ -1,13 +1,9 @@
-﻿using System;
-using Verse;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Verse;
 
 namespace Immortals.Source
 {
     [HarmonyLib.HarmonyPatch(typeof(ReverseDesignatorDatabase), nameof(ReverseDesignatorDatabase.InitDesignators))]
-    class ReverseDesignatorDatabasePatch
+    public static class ReverseDesignatorDatabase_Postfix
     {
         static void Postfix(ReverseDesignatorDatabase __instance)
         {

@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Verse;
 using RimWorld;
-using UnityEngine;
-using RimWorld.Planet;
 
 namespace Immortals
 {
@@ -291,24 +288,24 @@ namespace Immortals
         //Working Hediffs
         public bool hediffsLoaded = false;
 
-        public HediffDef immortalHediff;
-        HediffDef deathStasisHediff;
-        HediffDef stuntedHediff;
-        HediffDef stuntedProcHediff;
-        HediffDef stuntedBurnHediff;
-        HediffDef timerHediff;
-        HediffDef growingHediff;
-        HediffDef missingHediff;
-        HediffDef adjustingHediff;
-        HediffDef returnedHediff;
-        HediffDef firstReturnedHediff;
-        HediffDef hungerHediff;
-        HediffDef hungerHolderHediff;
-
-        HediffDef nemnirHediff;
-        HediffDef komaHediff;
-        HediffDef mortalisCrystalHediff;
-        HediffDef mortalisBuildupHediff;
+        // public HediffDef immortalHediff;
+        // HediffDef deathStasisHediff;
+        // HediffDef stuntedHediff;
+        // HediffDef stuntedProcHediff;
+        // HediffDef stuntedBurnHediff;
+        // HediffDef timerHediff;
+        // HediffDef growingHediff;
+        // HediffDef missingHediff;
+        // HediffDef adjustingHediff;
+        // HediffDef returnedHediff;
+        // HediffDef firstReturnedHediff;
+        // HediffDef hungerHediff;
+        // HediffDef hungerHolderHediff;
+        // 
+        // HediffDef nemnirHediff;
+        // HediffDef komaHediff;
+        // HediffDef mortalisCrystalHediff;
+        // HediffDef mortalisBuildupHediff;
 
         List<HediffDef> immortalHediffs;
 
@@ -615,37 +612,37 @@ namespace Immortals
         {
             this.immortalHediffs = new List<HediffDef>();
 
-            this.immortalHediff = DefDatabase<HediffDef>.GetNamed("IH_Immortal");
-            this.deathStasisHediff = DefDatabase<HediffDef>.GetNamed("IH_DeathStasis");
-            this.stuntedHediff = DefDatabase<HediffDef>.GetNamed("IH_Stunted");
-            this.stuntedProcHediff = DefDatabase<HediffDef>.GetNamed("IH_StuntedProc");
-            this.stuntedBurnHediff = DefDatabase<HediffDef>.GetNamed("IH_Burn");
-            this.timerHediff = DefDatabase<HediffDef>.GetNamed("IH_DeathTimer");
-            this.growingHediff = DefDatabase<HediffDef>.GetNamed("IH_regrowing");
-            this.missingHediff = DefDatabase<HediffDef>.GetNamed("MissingBodyPart");
-            this.adjustingHediff = DefDatabase<HediffDef>.GetNamed("IH_adjusting");
-            this.returnedHediff = DefDatabase<HediffDef>.GetNamed("IH_revived");
-            this.firstReturnedHediff = DefDatabase<HediffDef>.GetNamed("IH_revivedFirst");
-            this.hungerHediff = DefDatabase<HediffDef>.GetNamed("IH_theHunger");
-            this.hungerHolderHediff = DefDatabase<HediffDef>.GetNamed("IH_hungerHolder");
+            // this.immortalHediff = DefDatabase<HediffDef>.GetNamed("IH_Immortal");
+            // this.deathStasisHediff = DefDatabase<HediffDef>.GetNamed("IH_DeathStasis");
+            // this.stuntedHediff = DefDatabase<HediffDef>.GetNamed("IH_Stunted");
+            // this.stuntedProcHediff = DefDatabase<HediffDef>.GetNamed("IH_StuntedProc");
+            // this.stuntedBurnHediff = DefDatabase<HediffDef>.GetNamed("IH_Burn");
+            // this.timerHediff = DefDatabase<HediffDef>.GetNamed("IH_DeathTimer");
+            // this.growingHediff = DefDatabase<HediffDef>.GetNamed("IH_regrowing");
+            // this.missingHediff = DefDatabase<HediffDef>.GetNamed("MissingBodyPart");
+            // this.adjustingHediff = DefDatabase<HediffDef>.GetNamed("IH_adjusting");
+            // this.returnedHediff = DefDatabase<HediffDef>.GetNamed("IH_revived");
+            // this.firstReturnedHediff = DefDatabase<HediffDef>.GetNamed("IH_revivedFirst");
+            // this.hungerHediff = DefDatabase<HediffDef>.GetNamed("IH_theHunger");
+            // this.hungerHolderHediff = DefDatabase<HediffDef>.GetNamed("IH_hungerHolder");
 
-            this.nemnirHediff = DefDatabase<HediffDef>.GetNamed("IH_NemnirHigh");
-            this.komaHediff = DefDatabase<HediffDef>.GetNamed("IH_KomaHigh");
-            this.mortalisCrystalHediff = DefDatabase<HediffDef>.GetNamed("IH_MortalisCrystalImplant");
-            this.mortalisBuildupHediff = DefDatabase<HediffDef>.GetNamed("IH_MortalisTollerance");
+            // this.nemnirHediff = DefDatabase<HediffDef>.GetNamed("IH_NemnirHigh");
+            // this.komaHediff = DefDatabase<HediffDef>.GetNamed("IH_KomaHigh");
+            // this.mortalisCrystalHediff = DefDatabase<HediffDef>.GetNamed("IH_MortalisCrystalImplant");
+            // this.mortalisBuildupHediff = DefDatabase<HediffDef>.GetNamed("IH_MortalisTollerance");
 
-            this.immortalHediffs.Add(this.mortalisBuildupHediff);
-            this.immortalHediffs.Add(this.stuntedBurnHediff);
+            this.immortalHediffs.Add(HediffDefOf_Immortals.IH_MortalisTollerance); // this.mortalisBuildupHediff
+            this.immortalHediffs.Add(HediffDefOf_Immortals.IH_Burn); // this.stuntedBurnHediff
             //immortalHediffs.Add(deathStasisHediff);
 
             this.baseHealHediffs = new List<HediffDef>();
-            this.baseHealHediffs.Add(this.growingHediff);
-            this.baseHealHediffs.Add(this.timerHediff);
+            this.baseHealHediffs.Add(HediffDefOf_Immortals.IH_regrowing);
+            this.baseHealHediffs.Add(HediffDefOf_Immortals.IH_DeathTimer);
 
             this.baseIgnoreHediffs = new List<HediffDef>();
-            this.baseIgnoreHediffs.Add(this.stuntedHediff);
-            this.baseIgnoreHediffs.Add(this.stuntedBurnHediff);
-            this.baseIgnoreHediffs.Add(this.deathStasisHediff);
+            this.baseIgnoreHediffs.Add(HediffDefOf_Immortals.IH_Stunted);
+            this.baseIgnoreHediffs.Add(HediffDefOf_Immortals.IH_Burn);
+            this.baseIgnoreHediffs.Add(HediffDefOf_Immortals.IH_DeathStasis);
 
             this.hediffsLoaded = true;
         }
@@ -825,14 +822,14 @@ namespace Immortals
 
         void LoadImmortalsHediffs()
         {
-            if (!this.hediffSettings.ContainsKey(this.mortalisBuildupHediff))
+            if (!this.hediffSettings.ContainsKey(HediffDefOf_Immortals.IH_MortalisTollerance))
             {
-                this.hediffSettings.Add(this.mortalisBuildupHediff, new Hediff_Setting(null, 0, false, true, false, HediffType.Other));
+                this.hediffSettings.Add(HediffDefOf_Immortals.IH_MortalisTollerance, new Hediff_Setting(null, 0, false, true, false, HediffType.Other));
             }
 
-            if (!this.hediffSettings.ContainsKey(this.stuntedBurnHediff))
+            if (!this.hediffSettings.ContainsKey(HediffDefOf_Immortals.IH_Burn))
             {
-                this.hediffSettings.Add(this.stuntedBurnHediff, new Hediff_Setting(null, 0.01f, false, true, false, HediffType.Other));
+                this.hediffSettings.Add(HediffDefOf_Immortals.IH_Burn, new Hediff_Setting(null, 0.01f, false, true, false, HediffType.Other));
             }
         }
 
@@ -892,7 +889,7 @@ namespace Immortals
 
                 return false;
             }
-            if (hediff.def.injuryProps != null && hediff.def != this.missingHediff)
+            if (hediff.def.injuryProps != null && hediff.def != HediffDefOf.MissingBodyPart)
             {
                 if (hediff.IsPermanent())
                 {
@@ -963,14 +960,14 @@ namespace Immortals
 
             if (hediff.def.tendable)
             {
-                if (hediff.IsPermanent() || hediff.def == this.missingHediff)
+                if (hediff.IsPermanent() || hediff.def == HediffDefOf.MissingBodyPart)
                 {
                     return false;
                 }
 
                 return true;
             }
-            if (hediff.def == this.growingHediff)
+            if (hediff.def == HediffDefOf_Immortals.IH_regrowing)
             {
                 if (hediff.Severity < 1)
                 {
@@ -985,12 +982,12 @@ namespace Immortals
 
         private bool HediffBaseCureToReviveDef(HediffDef hediff)
         {
-            if (hediff == this.deathStasisHediff || hediff == this.stuntedHediff)
+            if (hediff == HediffDefOf_Immortals.IH_DeathStasis || hediff == HediffDefOf_Immortals.IH_Stunted)
             {
                 return false;
             }
 
-            if (hediff == this.timerHediff)
+            if (hediff == HediffDefOf_Immortals.IH_DeathTimer)
             {
                 return true;
             }
@@ -1031,7 +1028,7 @@ namespace Immortals
 
         private float HediffBaseHealSpeedDef(HediffDef hediff)
         {
-            if (hediff == this.growingHediff)
+            if (hediff == HediffDefOf_Immortals.IH_regrowing)
             {
                 return -1;
             }
@@ -1086,7 +1083,7 @@ namespace Immortals
                 return true;
             }
 
-            if (hediff.def == this.growingHediff)
+            if (hediff.def == HediffDefOf_Immortals.IH_regrowing)
             {
                 return true;
             }

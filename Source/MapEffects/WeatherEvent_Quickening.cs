@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
+﻿using UnityEngine;
 using Verse;
 using Verse.Sound;
 using RimWorld;
@@ -10,7 +6,7 @@ using RimWorld;
 namespace Immortals
 {
     [StaticConstructorOnStartup]
-    class WeatherEvent_Quickening : WeatherEvent_LightningFlash
+    public class WeatherEvent_Quickening : WeatherEvent_LightningFlash
     {
         public WeatherEvent_Quickening(Map map) : base(map)
         {

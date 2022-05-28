@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 
-
 <Defs>
 <HediffDef>
   <defName>IH_Immortal</defName>
@@ -341,5 +340,4 @@
     <description>This is a placeholder to calculate the proper gnawing hunger hediff as dead pawns don't have a hunger rate</description>
     <label>HungerHolder</label>
   </HediffDef>
-
 </Defs>

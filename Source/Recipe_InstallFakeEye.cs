@@ -1,9 +1,7 @@
-﻿using System;
+﻿using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
 using Verse;
-using RimWorld;
-using System.Text;
 
 namespace Immortals
 {
@@ -11,8 +9,8 @@ namespace Immortals
     public class Recipe_InstallFakeEye : Recipe_Surgery
     {
         public static ThingDef fakeEyeDef = DefDatabase<ThingDef>.GetNamed("IH_FakeEye");
-
-
+     
+        
         // Token: 0x0600524E RID: 21070 RVA: 0x001BAD8C File Offset: 0x001B8F8C
         public override IEnumerable<BodyPartRecord> GetPartsToApplyOn(Pawn pawn, RecipeDef recipe)
         {

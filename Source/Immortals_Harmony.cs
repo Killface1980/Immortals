@@ -6,11 +6,7 @@ using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using RimWorld;
-using UnityEngine;
 using Verse;
-using Verse.AI;
-using Verse.AI.Group;
-using Verse.Sound;
 using OpCodes = System.Reflection.Emit.OpCodes;
 
 
@@ -18,7 +14,7 @@ using OpCodes = System.Reflection.Emit.OpCodes;
 namespace Immortals
 {
     [StaticConstructorOnStartup]
-    internal static class ImmortalsHarmony
+    public static class ImmortalsHarmony
     {
         static ImmortalsHarmony()
         {
@@ -79,7 +75,7 @@ namespace Immortals
                         }
                         if (rand <= chance)
                         {
-                            HediffDef immortal = DefDatabase<HediffDef>.GetNamed("IH_Immortal");
+                            HediffDef immortal = HediffDefOf_Immortals.IH_Immortal;
                             pawn.health.AddHediff(immortal);
                             addPawn = true;
                             rand = Rand.Range(0, 1f);

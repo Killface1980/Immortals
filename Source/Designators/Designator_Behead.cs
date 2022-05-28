@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
 using Verse;
 using RimWorld;
+using JetBrains.Annotations;
 
 namespace Immortals
 {
     [HotSwappable]
-    class Designator_Behead : Designator
+    public class Designator_Behead : Designator
     {
 
         public Designator_Behead()
@@ -71,19 +70,16 @@ namespace Immortals
 
             if (Immortals_DesignatorUtility.CanBeBeheaded(t))
             {
-                if (t is Corpse corpse && corpse.InnerPawn.health.hediffSet.GetFirstHediffOfDef(Immortal_Component.immortalHediff) != null)
+                if (t is Corpse corpse && corpse.InnerPawn.IsImmmortal())
                 {
-                    if (Immortals_DesignatorUtility.IsVisibleImmortal(corpse.InnerPawn))
-                    {
-                        return true;
-                    }
+                    return true;
+
+                    //return corpse.InnerPawn.IsVisibleImmortal();                        ;
                 }
-                if (t is Pawn pawn && pawn.Downed && pawn.health.hediffSet.GetFirstHediffOfDef(Immortal_Component.immortalHediff) != null)
+                if (t is Pawn pawn && pawn.Downed && pawn.IsImmmortal())
                 {
-                    if (Immortals_DesignatorUtility.IsVisibleImmortal(pawn))
-                    {
-                        return true;
-                    }
+                    return true;
+                    //return pawnIsVisibleImmortal();                        ;
                 }
             }
 

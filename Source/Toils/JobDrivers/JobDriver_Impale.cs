@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using Verse;
 using Verse.AI;
-using RimWorld;
 
 
 namespace Immortals
 {
-    class JobDriver_Impale : JobDriver
+    public class JobDriver_Impale : JobDriver
     {
         public override bool TryMakePreToilReservations(bool errorOnFailed)
         {
@@ -71,7 +67,7 @@ namespace Immortals
                                 }
                             }
                         }
-                        Hediff impaleDif = impaleee.health.AddHediff(impaleHediffDef, bodyPart);
+                        Hediff impaleDif = impaleee.health.AddHediff(HediffDefOf_Immortals.IH_ImpaledHeart, bodyPart);
                         if (this.TargetB.Thing.stackCount == 1)
                         {
                             this.TargetB.Thing.Destroy();
@@ -87,6 +83,6 @@ namespace Immortals
             yield break;
         }
 
-        public static HediffDef impaleHediffDef = DefDatabase<HediffDef>.GetNamed("IH_ImpaledHeart");
+
     }
 }

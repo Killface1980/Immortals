@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
 using Verse;
 using RimWorld;
@@ -9,18 +7,18 @@ using RimWorld;
 namespace Immortals
 {
     [HotSwappable]
-    class Designator_Impale : Designator
+    public class Designator_Impale : Designator
     {
 
         public Designator_Impale()
         {
-            this.defaultLabel = "IH_Designator_Impale".Translate();
-            this.defaultDesc = "IH_Designator_ImpaleDesc".Translate();
-            this.icon = ContentFinder<Texture2D>.Get("UI/ImpaledHeart_Icon", true);
+            this.defaultLabel     = "IH_Designator_Impale".Translate();
+            this.defaultDesc      = "IH_Designator_ImpaleDesc".Translate();
+            this.icon             = ContentFinder<Texture2D>.Get("UI/ImpaledHeart_Icon", true);
             this.soundDragSustain = SoundDefOf.Designate_DragStandard;
             this.soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
-            this.useMouseIcon = true;
-            this.soundSucceeded = SoundDefOf.Designate_Claim;
+            this.useMouseIcon     = true;
+            this.soundSucceeded   = SoundDefOf.Designate_Claim;
         }
 
         public override int DraggableDimensions
@@ -70,19 +68,18 @@ namespace Immortals
             }
             if (Immortals_DesignatorUtility.CanBeImpaled(t))
             {
-                if (t is Corpse corpse && corpse.InnerPawn.health.hediffSet.GetFirstHediffOfDef(Immortal_Component.immortalHediff) != null)
+                if (t is Corpse corpse && corpse.InnerPawn.IsImmmortal())
                 {
-                    if (Immortals_DesignatorUtility.IsVisibleImmortal(corpse.InnerPawn))
-                    {
-                        return true;
-                    }
+                    return true;
+                    //return corpse.InnerPawn.IsVisibleImmortal();
+                    
                 }
-                if (t is Pawn pawn && pawn.Downed && pawn.health.hediffSet.GetFirstHediffOfDef(Immortal_Component.immortalHediff) != null)
+                if (t is Pawn pawn && pawn.Downed && pawn.IsImmmortal())
                 {
-                    if (Immortals_DesignatorUtility.IsVisibleImmortal(pawn))
-                    {
-                        return true;
-                    }
+                    return true;
+
+                    //return pawn.IsVisibleImmortal();
+                   
                 }
             }
 

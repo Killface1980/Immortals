@@ -1,16 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using RimWorld;
-using UnityEngine;
 using Verse;
 
 namespace Immortals
 {
     [HotSwappable]
-    class Immortal_HeadComp : ThingComp
+    public class Immortal_HeadComp : ThingComp
     {
         public int ImmortalLevel { get => this.immortalLevel; }
 
@@ -52,27 +46,27 @@ namespace Immortals
             }
             else if (this.immortalLevel <= 1)
             {
-                newLabel = newLabel + "IH_lesser".Translate();
+                newLabel += "IH_lesser".Translate();
             }
             else if (this.immortalLevel < 2)
             {
-                newLabel = newLabel + "IH_immortal".Translate();
+                newLabel += "IH_immortal".Translate();
             }
             else if (this.immortalLevel < 4)
             {
-                newLabel = newLabel + "IH_greater".Translate();
+                newLabel += "IH_greater".Translate();
             }
             else if (this.immortalLevel < 7)
             {
-                newLabel = newLabel + "IH_high".Translate();
+                newLabel += "IH_high".Translate();
             }
             else if (this.immortalLevel < 10)
             {
-                newLabel = newLabel + "IH_grand".Translate();
+                newLabel += "IH_grand".Translate();
             }
             else
             {
-                newLabel = newLabel + "IH_apex".Translate();
+                newLabel += "IH_apex".Translate();
             }
 
             if (this.immortalLevel != 0)
@@ -93,8 +87,8 @@ namespace Immortals
         {
             if (this.immortalLevel != 0)
             {
-                HediffDef imDifDef = DefDatabase<HediffDef>.GetNamed("IH_Immortal");
-                Hediff imDif = ingester.health.hediffSet.GetFirstHediffOfDef(imDifDef);
+                //HediffDef imDifDef = HediffDefOf_Immortals.IH_Immortal;// DefDatabase<HediffDef>.GetNamed("IH_Immortal");
+                Hediff imDif = ingester.GetImmortalHediff();// ingester.health.hediffSet.GetFirstHediffOfDef(imDifDef);
                 if (imDif == null)
                 {
                     float chance = 0;
@@ -127,15 +121,14 @@ namespace Immortals
                     float val = Rand.Range(0, 1f);
                     if (val <= chance)
                     {
-                        imDif = ingester.health.AddHediff(imDifDef);
+                        imDif = ingester.health.AddHediff(HediffDefOf_Immortals.IH_Immortal);
                         imDif.Severity = 0.5f;
 
                         val = Rand.Range(0, 1f);
                         if (val < settings.stuntedChanceHead)
                         {
-                            ingester.health.hediffSet.GetFirstHediffOfDef(DefDatabase<HediffDef>.GetNamed("IH_StuntedProc"));
+                            ingester.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_StuntedProc);
                         }
-
                     }
                 }
             }
@@ -156,7 +149,7 @@ namespace Immortals
         }
 
 
-        int immortalLevel;
+        private int immortalLevel;
     }
 
 }

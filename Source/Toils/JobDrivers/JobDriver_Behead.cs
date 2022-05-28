@@ -1,15 +1,12 @@
-﻿using System;
+﻿using RimWorld;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Verse;
 using Verse.AI;
-using RimWorld;
 
 
 namespace Immortals
 {
-    class JobDriver_Behead : JobDriver
+    public class JobDriver_Behead : JobDriver
     {
         public override bool TryMakePreToilReservations(bool errorOnFailed)
         {
@@ -59,7 +56,7 @@ namespace Immortals
 
                     if (beheadee != null)
                     {
-                        DamageDef damageDef = DefDatabase<DamageDef>.GetNamed("Cut");
+                        DamageDef damageDef = DamageDefOf.Cut;
                         BodyPartRecord bodyPart = null;
                         //bodyPart = ffffff
                         foreach (BodyPartRecord part in beheadee.health.hediffSet.GetNotMissingParts())
@@ -85,11 +82,10 @@ namespace Immortals
                         hediff.Severity = 1000f;
                         //beheadee.TakeDamage(beheadDmg);
                         //beheadee.PostApplyDamage(beheadDmg, 1000);
-                        Hediff immortalHediff = beheadee.health.hediffSet.GetFirstHediffOfDef(Verse.DefDatabase<HediffDef>.GetNamed("IH_Immortal"));
+                        // Hediff immortalHediff = beheadee.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Immortal);
 
-
-
-                        if (immortalHediff != null)
+                        //if (immortalHediff != null)
+                        if (beheadee.IsImmmortal(out Hediff immortalHediff))
                         {
                             ThingDef headDef = Verse.DefDatabase<ThingDef>.GetNamed("IH_Head");
                             Thing head = ThingMaker.MakeThing(headDef);
@@ -113,9 +109,9 @@ namespace Immortals
                             }
                             if (headComp != null)
                             {
-
-                                Hediff immortalDif = beheadee.health.hediffSet.GetFirstHediffOfDef(DefDatabase<HediffDef>.GetNamed("IH_Immortal"));
-                                if (immortalDif != null)
+                                // Hediff immortalDif = beheadee.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Immortal);
+                                // if (immortalDif != null)
+                                if (beheadee.IsImmmortal(out Hediff immortalDif))
                                 {
 
                                     headComp.SetImmortalLevel(immortalDif.Severity);
@@ -133,6 +129,5 @@ namespace Immortals
             yield break;
         }
 
-        public static HediffDef cutDiff = DefDatabase<HediffDef>.GetNamed("Cut");
     }
 }

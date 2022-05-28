@@ -1,12 +1,10 @@
-﻿
-using System;
-using Verse;
+﻿using Verse;
 using RimWorld;
 
 namespace Immortals
 {
 
-    class MortalisDrug : Hediff_High
+    public class MortalisDrug : Hediff_High
     {
 
         public override void PostAdd(DamageInfo? dinfo)

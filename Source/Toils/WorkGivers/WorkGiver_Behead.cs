@@ -1,8 +1,5 @@
-﻿using System;
+﻿using RimWorld;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using RimWorld;
 using Verse;
 using Verse.AI;
 
@@ -11,6 +8,7 @@ namespace Immortals
     [HotSwappable]
     public class WorkGiver_Behead : WorkGiver_Scanner
     {
+
         public override IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn)
         {
             foreach (Designation des in pawn.Map.designationManager.SpawnedDesignationsOfDef(designation))
@@ -27,6 +25,10 @@ namespace Immortals
             return Danger.Deadly;
         }
 
+        private static JobDef beheadJobDef = DefDatabase<JobDef>.GetNamed("IH_Behead");
+
+        private static DesignationDef designation = DefDatabase<DesignationDef>.GetNamed("IH_Behead");
+
         // Token: 0x06000756 RID: 1878 RVA: 0x00041CE8 File Offset: 0x000400E8
         public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
         {
@@ -37,7 +39,7 @@ namespace Immortals
 
             // Hediff immortality = pawn.health.hediffSet.GetFirstHediffOfDef(Immortal_Component.immortalHediff);
             // bool corpseIsImmortal = (t as Corpse).InnerPawn.health.hediffSet.GetFirstHediffOfDef(Immortal_Component.immortalHediff) != null;
-            // 
+            //
             // if (immortality == null)
             // {
             //     if (corpseIsImmortal)
@@ -52,7 +54,7 @@ namespace Immortals
             //     {
             //         return false;
             //     }
-            // 
+            //
             // }
 
             LocalTargetInfo target = t;
@@ -66,9 +68,5 @@ namespace Immortals
         }
 
 
-
-        static JobDef beheadJobDef = DefDatabase<JobDef>.GetNamed("IH_Behead");
-        static DesignationDef designation = DefDatabase<DesignationDef>.GetNamed("IH_Behead");
     }
-
 }

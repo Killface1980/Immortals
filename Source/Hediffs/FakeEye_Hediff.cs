@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Verse;
+﻿using Verse;
 using RimWorld;
 
 namespace Immortals
 {
-    class FakeEye_Hediff : Hediff_AddedPart
+    public class FakeEye_Hediff : Hediff_AddedPart
     {
 
         private ThingDef stuff;

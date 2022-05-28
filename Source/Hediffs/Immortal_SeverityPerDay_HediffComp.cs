@@ -1,15 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Verse;
-using RimWorld;
-using UnityEngine;
-using RimWorld.Planet;
+﻿using Verse;
 
 namespace Immortals
 {
-    class Immortal_SeverityPerDay_HediffComp : HediffComp_SeverityPerDay
+    public class Immortal_SeverityPerDay_HediffComp : HediffComp_SeverityPerDay
     {
         HediffDef immortalHediffDef;
 
@@ -27,7 +20,7 @@ namespace Immortals
         {
             if (this.immortalHediffDef == null)
             {
-                this.immortalHediffDef = DefDatabase<HediffDef>.GetNamedSilentFail("IH_Immortal");
+                this.immortalHediffDef = HediffDefOf_Immortals.IH_Immortal;
             }
 
             return this.Props.severityPerDay;

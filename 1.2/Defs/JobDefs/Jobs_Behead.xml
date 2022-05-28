@@ -6,6 +6,4 @@
     <reportString>Beheading TargetA.</reportString>
     <allowOpportunisticPrefix>true</allowOpportunisticPrefix>
   </JobDef>
-
-
 </Defs>

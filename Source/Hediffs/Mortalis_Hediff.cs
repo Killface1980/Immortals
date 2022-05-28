@@ -1,20 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using Verse;
 using RimWorld;
 
 namespace Immortals
 {
-    class Mortalis_Hediff : Hediff_High
+    public class Mortalis_Hediff : Hediff_High
     {
         const float changePerDayMult = 0.0033333334f;
 
         float daysPerRelativeSeverity = 60;
 
-
-        HediffDef immortalHediffDef;
 
         public override bool CauseDeathNow()
         {
@@ -23,13 +18,9 @@ namespace Immortals
                 return false;
             }
 
-            if (this.immortalHediffDef == null)
-            {
-                this.immortalHediffDef = DefDatabase<HediffDef>.GetNamedSilentFail("IH_Immortal");
-            }
-
-            Hediff immortalHediff = this.pawn.health.hediffSet.GetFirstHediffOfDef(this.immortalHediffDef);
-            if (immortalHediff != null)
+            // Hediff immortalHediff = this.pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Immortal);
+            // if (immortalHediff != null)
+            if (this.pawn.IsImmmortal(out Hediff immortalHediff))
             {
                 if (immortalHediff.Severity < this.Severity)
                 {
@@ -53,14 +44,9 @@ namespace Immortals
                 return;
             }
 
-            if (this.immortalHediffDef == null)
-            {
-                this.immortalHediffDef = DefDatabase<HediffDef>.GetNamedSilentFail("IH_Immortal");
-            }
-
             float changeRate = 1 / this.daysPerRelativeSeverity * changePerDayMult;
 
-            Hediff immortalHediff = this.pawn.health.hediffSet.GetFirstHediffOfDef(this.immortalHediffDef, true);
+            Hediff immortalHediff = this.pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Immortal, true);
             if (immortalHediff != null && immortalHediff.Severity > 1)
             {
                 changeRate *= immortalHediff.Severity;
@@ -78,12 +64,8 @@ namespace Immortals
                     return 0;
                 }
                 float severity = this.Severity;
-                if (this.immortalHediffDef == null)
-                {
-                    this.immortalHediffDef = DefDatabase<HediffDef>.GetNamedSilentFail("IH_Immortal");
-                }
 
-                Hediff immortalHediff = this.pawn.health.hediffSet.GetFirstHediffOfDef(this.immortalHediffDef, true);
+                Hediff immortalHediff = this.pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Immortal, true);
                 if (immortalHediff != null)
                 {
                     if (immortalHediff.Severity > 1)
@@ -113,12 +95,8 @@ namespace Immortals
                     return null;
                 }
                 float severity = this.Severity;
-                if (this.immortalHediffDef == null)
-                {
-                    this.immortalHediffDef = DefDatabase<HediffDef>.GetNamedSilentFail("IH_Immortal");
-                }
 
-                Hediff immortalHediff = this.pawn.health.hediffSet.GetFirstHediffOfDef(this.immortalHediffDef, true);
+                Hediff immortalHediff = this.pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Immortal, true);
                 if (immortalHediff != null)
                 {
                     if (immortalHediff.Severity > 1)

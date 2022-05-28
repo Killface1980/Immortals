@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Verse;
-using RimWorld;
+﻿using Verse;
 
 namespace Immortals
 {
-    class FakeEyeHolder_Hediff : Hediff
+    public class FakeEyeHolder_Hediff : Hediff
     {
 
         public BodyPartRecord place;

@@ -1,17 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Verse;
 using Verse.AI;
-using RimWorld;
 
 namespace Immortals
 {
-    class JobDriver_ReplaceFakeEye : JobDriver
+    public class JobDriver_ReplaceFakeEye : JobDriver
     {
 
-        public static HediffDef fakeEyeHediffDef = DefDatabase<HediffDef>.GetNamed("IH_FakeEye");
-        public static HediffDef missingDef = DefDatabase<HediffDef>.GetNamed("MissingBodyPart");
-        public static HediffDef placeHolderDef = DefDatabase<HediffDef>.GetNamed("IH_FakeEyePlaceHolder");
+        // public static HediffDef fakeEyeHediffDef = DefDatabase<HediffDef>.GetNamed("IH_FakeEye");
+        //public static HediffDef placeHolderDef = DefDatabase<HediffDef>.GetNamed("IH_FakeEyePlaceHolder");
         public static BodyPartTagDef sightSource = DefDatabase<BodyPartTagDef>.GetNamed("SightSource");
 
         // Token: 0x170009DE RID: 2526
@@ -55,7 +52,7 @@ namespace Immortals
                 initAction = delegate ()
                 {
                     BodyPartRecord part = null;
-                    Hediff placeHolder = this.pawn.health.hediffSet.GetFirstHediffOfDef(placeHolderDef);
+                    Hediff placeHolder = this.pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_FakeEyePlaceHolder);
                     if (placeHolder != null)
                     {
                         part = (placeHolder as FakeEyeHolder_Hediff).place;
@@ -64,7 +61,7 @@ namespace Immortals
                     Hediff oldEyeHediff = null;
                     foreach (Hediff hediff in this.pawn.health.hediffSet.hediffs)
                     {
-                        if (hediff.def == fakeEyeHediffDef && hediff.Part == part)
+                        if (hediff.def == HediffDefOf_Immortals.IH_FakeEye && hediff.Part == part)
                         {
                             oldEyeHediff = hediff;
                             part = hediff.Part;

@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Verse;
+﻿using Verse;
 using RimWorld;
 
 namespace Immortals
 {
-    class GameCondition_Quickening : GameCondition
+   public class GameCondition_Quickening : GameCondition
     {
         public override void ExposeData()
         {

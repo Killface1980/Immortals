@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 using RimWorld;
 
 namespace Immortals
 {
-    class JobDriver_EmptyImmortalExtractor : JobDriver
+    public class JobDriver_EmptyImmortalExtractor : JobDriver
     {
 
         // Token: 0x170009B4 RID: 2484

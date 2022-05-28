@@ -1,22 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Verse;
-using RimWorld;
-using UnityEngine;
-using RimWorld.Planet;
-
-
-namespace Immortals
+﻿namespace Immortals
 {
-
-
-
-
-
-
-
     public enum HediffType
     {
         Condition,
@@ -24,7 +7,3 @@ namespace Immortals
         Other
     }
 }
-
-
-
-

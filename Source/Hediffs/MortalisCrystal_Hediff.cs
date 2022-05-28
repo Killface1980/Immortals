@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Verse;
-using RimWorld;
 
 namespace Immortals
 {
-    class MortalisCrystal_Hediff : Hediff
+    public class MortalisCrystal_Hediff : Hediff
     {
         const float changePerDayMult = 0.0033333334f;
 
@@ -33,11 +29,11 @@ namespace Immortals
             this.daysLeft -= changePerDayMult;
             if (this.daysLeft < 0)
             {
-                HediffDef immortalHediffDef = DefDatabase<HediffDef>.GetNamed("IH_Immortal");
-                Hediff immortalHediff = this.pawn.health.hediffSet.GetFirstHediffOfDef(immortalHediffDef);
-
-                HediffDef stuntedHediffDef = DefDatabase<HediffDef>.GetNamed("IH_Stunted");
-                Hediff stuntedHediff = this.pawn.health.hediffSet.GetFirstHediffOfDef(stuntedHediffDef);
+                // HediffDef immortalHediffDef = DefDatabase<HediffDef>.GetNamed("IH_Immortal");
+                // Hediff immortalHediff = this.pawn.health.hediffSet.GetFirstHediffOfDef(immortalHediffDef);
+                Hediff immortalHediff = pawn.GetImmortalHediff();
+                //HediffDef stuntedHediffDef = DefDatabase<HediffDef>.GetNamed("IH_Stunted");
+                Hediff stuntedHediff = this.pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Stunted);
 
                 if (Immortals_DesignatorUtility.IsConciousnessPart(this.Part.def))
                 {
@@ -47,7 +43,7 @@ namespace Immortals
                     }
                     else
                     {
-                        immortalHediff = this.pawn.health.AddHediff(immortalHediffDef);
+                        immortalHediff = this.pawn.health.AddHediff(HediffDefOf_Immortals.IH_Immortal);
                         immortalHediff.Severity = 1;
                     }
                     if (stuntedHediff != null)
@@ -68,9 +64,9 @@ namespace Immortals
                     }
                     else
                     {
-                        immortalHediff = this.pawn.health.AddHediff(immortalHediffDef);
+                        immortalHediff = this.pawn.health.AddHediff(HediffDefOf_Immortals.IH_Immortal);
                         immortalHediff.Severity = 0.6f;
-                        stuntedHediff = this.pawn.health.AddHediff(stuntedHediffDef);
+                        stuntedHediff = this.pawn.health.AddHediff(HediffDefOf_Immortals.IH_Stunted);
                         stuntedHediff.Severity = 1 + Rand.Range(0, 1f);
                     }
                 }

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using RimWorld;
-using Verse;
+﻿using Verse;
 
 namespace Immortals
 {
@@ -11,9 +6,9 @@ namespace Immortals
     public static class Immortals_DesignatorUtility
     {
 
-        static Immortals_Settings settings = LoadedModManager.GetMod<Immortals_Mod>().GetSettings<Immortals_Settings>();
+        private static Immortals_Settings settings = LoadedModManager.GetMod<Immortals_Mod>().GetSettings<Immortals_Settings>();
 
-        static HediffDef immortalHediff = DefDatabase<HediffDef>.GetNamed("IH_Immortal");
+        // static HediffDef immortalHediff = DefDatabase<HediffDef>.GetNamed("IH_Immortal");
 
         public static bool CanBeBeheaded(Thing thing)
         {
@@ -86,14 +81,14 @@ namespace Immortals
             //Here is a thingerdo
             if (thing is Corpse)
             {
-                if (IsVisibleImmortal((thing as Corpse).InnerPawn))
+                if ((thing as Corpse).InnerPawn.IsVisibleImmortal())
                 {
                     return true;
                 }
             }//And another one woo!
             if (thing is Pawn)
             {
-                if (IsVisibleImmortal(thing as Pawn) && ((thing as Pawn).Downed || (thing as Pawn).IsPrisoner))
+                if ((thing as Pawn).IsVisibleImmortal() && ((thing as Pawn).Downed || (thing as Pawn).IsPrisoner))
                 {
                     return true;
                 }
@@ -180,27 +175,14 @@ namespace Immortals
             return false;
         }
 
-        public static bool IsVisibleImmortal(Pawn pawn)
+
+        public enum PawnType
         {
-            Hediff imDiff;
-            if (pawn.health.hediffSet.HasHediff(immortalHediff))
-            {
-                imDiff = pawn.health.hediffSet.GetFirstHediffOfDef(immortalHediff);
-                if (imDiff.Severity > 0.5f)
-                {
-                    return true;
-                }
-            }
-            return false;
+            humanoid,
+            mechanoid,
+            animal,
+            unknown
         }
-    }
 
-    public enum PawnType
-    {
-        humanoid,
-        mechanoid,
-        animal,
-        unknown
     }
-
 }

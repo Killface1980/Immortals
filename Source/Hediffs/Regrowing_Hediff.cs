@@ -1,13 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Verse;
 
 namespace Immortals
 {
-    class Regrowing_Hediff : Hediff
+    public class Regrowing_Hediff : Hediff
     {
+
+        public BodyPartRecord forPart;
+
+        public int partHp;
 
         public Regrowing_Hediff()
         {
@@ -28,21 +29,6 @@ namespace Immortals
         }
 
 
-        public override bool Visible
-        {
-            get
-            {
-                Hediff imDiff = this.pawn.health.hediffSet.GetFirstHediffOfDef(DefDatabase<HediffDef>.GetNamedSilentFail("IH_Immortal"));
-
-                if (!this.pawn.Dead || (imDiff != null && imDiff.Severity > 0.5))
-                {
-                    return true;
-                }
-
-                return false;
-            }
-        }
-
         public override string SeverityLabel
         {
             get
@@ -62,11 +48,20 @@ namespace Immortals
             }
         }
 
-        public override bool TryMergeWith(Hediff other)
+        public override bool Visible
         {
-            return false;
-        }
+            get
+            {
+                Hediff imDiff = this.pawn.GetImmortalHediff();
 
+                if (!this.pawn.Dead || (imDiff != null && imDiff.Severity > 0.5))
+                {
+                    return true;
+                }
+
+                return false;
+            }
+        }
         public override void ExposeData()
         {
             base.ExposeData();
@@ -74,7 +69,9 @@ namespace Immortals
             Scribe_BodyParts.Look(ref this.forPart, "forPart");
         }
 
-        public BodyPartRecord forPart;
-        public int partHp;
+        public override bool TryMergeWith(Hediff other)
+        {
+            return false;
+        }
     }
 }
