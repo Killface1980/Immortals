@@ -40,8 +40,9 @@
   <ItemGroup>
     <Publicize Include="Assembly-CSharp;0Harmony" />
   </ItemGroup>
+  <!--
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="rd &quot;$(ProjectDir)obj&quot; /S /Q" />
   </Target>
-
+-->
 </Project>
