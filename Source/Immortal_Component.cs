@@ -8,6 +8,7 @@ using Verse;
 
 namespace Immortals
 {
+    [HotSwappable]
     public class Immortal_Component : GameComponent
     {
         public bool loaded = false;
@@ -99,7 +100,195 @@ namespace Immortals
             this.stuntedPawns = new List<Pawn>();
         }
 
-        public override void GameComponentUpdate()
+        public static void ChanceAddPawn(Pawn pawn)
+        {
+            if (Immortals_DesignatorUtility.HasConciousnessPart(pawn))
+            {
+                ImmortalsHarmony.ChanceAddImmortal(pawn);
+            }
+        }
+
+        public static void RollImmortals()
+        {
+            foreach (Pawn pawn in Find.CurrentMap.mapPawns.AllPawns.Concat(Find.WorldPawns.AllPawnsAliveOrDead))
+            {
+                ChanceAddPawn(pawn);
+            }
+        }
+
+        public void AddDeadImmortal(Pawn pawn, bool strike = true)
+        {
+            if (pawn == null)
+            {
+                return;
+            }
+
+            if (this.immortalPawns.Contains(pawn))
+            {
+                this.immortalPawns.Remove(pawn);
+            }
+
+            if (pawn.IsImmmortal())
+            {
+                Hediff dsHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_DeathStasis);
+                if (dsHediff != null)
+                {
+                    dsHediff.Severity = 1;
+                }
+
+                if (Immortals_DesignatorUtility.HasConciousnessPart(pawn) || this.settings.noBrainCheat)
+                {
+                    if (pawn.Corpse != null && pawn.Corpse.MapHeld == null)
+                    {
+                        Map eventMap;
+                        //eventMap = CaravanIncidentUtility.GetOrGenerateMapForIncident()
+                    }
+                    if (!pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_DeathTimer))
+                    {
+                        pawn.health.AddHediff(HediffDefOf_Immortals.IH_DeathTimer);
+                        pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_DeathTimer).Severity = 3f;
+                    }
+                    if (pawn.Corpse != null)
+                    {
+                        if (!this.deadPawnMaps.ContainsKey(pawn))
+                        {
+                            this.deadPawnMaps.Add(pawn, pawn.Corpse.MapHeld);
+                        }
+                        else
+                        {
+                            this.deadPawnMaps[pawn] = pawn.Corpse.MapHeld;
+                        }
+                    }
+                    IEnumerable<Hediff> pawnHediffs = pawn.health.hediffSet.hediffs.ToList();
+                    foreach (Hediff hediff in pawnHediffs)
+                    {
+                        if (hediff.GetType() == typeof(Hediff_MissingPart))
+                        {
+                            Hediff_MissingPart partDiff = hediff as Hediff_MissingPart;
+                            if (partDiff.Part != null)
+                            {
+                                if ((this.NeedPart(partDiff.Part) && !pawn.health.hediffSet.hediffs.Where(checkDif => checkDif is Regrowing_Hediff growCheck && growCheck.forPart == partDiff.Part).Any()))
+                                {
+                                    BodyPartRecord part = partDiff.Part;
+                                    Regrowing_Hediff newReGrowing = pawn.health.AddHediff(HediffDefOf_Immortals.IH_regrowing) as Regrowing_Hediff;
+                                    newReGrowing.forPart = part;
+                                    newReGrowing.Severity = 0.01f;
+                                    newReGrowing.partHp = part.def.hitPoints;
+                                }
+                            }
+                        }
+                    }
+                    this.SetRecovery(pawn);
+                }
+                else
+                {
+                    this.CheckQuickening(pawn);
+                }
+            }
+        }
+
+        public void AddImmortal(Pawn pawn, bool flash)
+        {
+            if (pawn != null)
+            {
+                if (this.immortalPawns == null)
+                {
+                    Log.Message("Pawns is null");
+                }
+
+                if (this.immortalPawns.Contains(pawn))
+                {
+                    return;
+                }
+
+                if (this.CanHeal(pawn))
+                {
+                    if (pawn.Map != null && flash)
+                    {
+                        pawn.Map.weatherManager.eventHandler.AddEvent(new WeatherEvent_Quickening(pawn.Map, pawn.Position, 0));
+                    }
+
+                    this.immortalPawns.Add(pawn);
+                    if (this.deadPawns.Contains(pawn))
+                    {
+                        this.deadPawns.Remove(pawn);
+                    }
+                    if (this.deadPawnMaps.ContainsKey(pawn))
+                    {
+                        this.deadPawnMaps.Remove(pawn);
+                    }
+                }
+                IEnumerable<Hediff> hediffs = pawn.health.hediffSet.hediffs.ToList();
+                IEnumerable<Hediff> missingDifs = pawn.health.hediffSet.hediffs.Where(checkDif => checkDif.def == HediffDefOf.MissingBodyPart);
+                foreach (Hediff hediff in hediffs)
+                {
+                    if (hediff != null && hediff.def == HediffDefOf_Immortals.IH_regrowing)
+                    {
+                        Regrowing_Hediff regrowDif = hediff as Regrowing_Hediff;
+                        if (regrowDif.forPart != null)
+                        {
+                            foreach (Hediff partDif in missingDifs)
+                            {
+                                if (partDif.Part == regrowDif.forPart)
+                                {
+                                    pawn.health.RemoveHediff(partDif);
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            pawn.health.RemoveHediff(regrowDif);
+                        }
+                    }
+                }
+                foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
+                {
+                    if (hediff != null && hediff.def == HediffDefOf_Immortals.IH_regrowing)
+                    {
+                        if (hediff is Regrowing_Hediff growDiff && growDiff.forPart != null)
+                        {
+                            hediff.Part = growDiff.forPart;
+                            growDiff.partHp = (int)Math.Round(growDiff.Part.def.hitPoints * pawn.HealthScale);
+                        }
+                    }
+                }
+            }
+        }
+
+        public void ClearPawn(Pawn pawn)
+        {
+            Hediff removeDif = pawn.GetImmortalHediff();
+            if (removeDif != null)
+            {
+                pawn.health.RemoveHediff(removeDif);
+            }
+
+            removeDif = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_DeathStasis);
+            if (removeDif != null)
+            {
+                pawn.health.RemoveHediff(removeDif);
+            }
+
+            removeDif = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_DeathTimer);
+            if (removeDif != null)
+            {
+                pawn.health.RemoveHediff(removeDif);
+            }
+
+            removeDif = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Stunted);
+            if (removeDif != null)
+            {
+                pawn.health.RemoveHediff(removeDif);
+            }
+
+            while (pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_regrowing) != null)
+            {
+                pawn.health.RemoveHediff(pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_regrowing));
+            }
+        }
+
+        public override void GameComponentTick()
         {
             bool doTick = false;
             int tickMult = Find.TickManager.TicksGame - this.lastTick;
@@ -223,314 +412,129 @@ namespace Immortals
                 this.rareTick -= (int)(this.settings.immortalTickRate * this.settings.immortalTickRateRare);
                 //Rare stuff yo
             }
-
-
-        }
-
-
-        private bool TickDeadImmortal(Pawn pawn, int tickMult)
-        {
-            bool keep = false;
-            if (pawn.health.Dead && Immortals_DesignatorUtility.HasConciousnessPart(pawn))
+            foreach (Pawn deadP in this.deadPawns)// dead pawns get no post tick
             {
-                if (pawn.Corpse != null)
-                {
-                    pawn.Position = pawn.Corpse.Position;
-                    //set healSpeed based on time past
-                    float healSpeed = (baseHealSpeed * this.settings.baseHealSpeed) * tickMult;
-
-                    CompRottable compRottable = pawn.Corpse.GetComp<CompRottable>();
-                    Hediff hediff;
-                    Hediff imDiff = pawn.GetImmortalHediff();
-                    Hediff stundDiff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Stunted);
-
-                    //Stop pawns from fully rotting
-                    if (compRottable != null)
-                    {
-                        if (compRottable.RotProgress < 80000)
-                        {
-                            compRottable.RotProgress -= 0.5f * tickMult;
-                        }
-                        else if (compRottable.RotProgress < 140000)
-                        {
-                            compRottable.RotProgress -= 0.75f * tickMult;
-                        }
-                        else
-                        {
-                            compRottable.RotProgress = 140000;
-                        }
-                    }
-
-                    if (pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_Immortal))
-                    {
-                        keep = true;
-
-                        if (imDiff != null)
-                        {
-                            healSpeed *= imDiff.Severity;
-                            if (imDiff.Severity <= 0.5f)
-                            {
-                                healSpeed *= this.settings.firstDeathHealFactor;
-                                healSpeed *= 2;
-                            }
-                        }
-                    }
-
-                    //Get a list of all injuries that need to be cured and organs that need to be regrown
-                    IEnumerable<Hediff> heDiffsEnumerable = pawn.health.hediffSet.hediffs.Where(hd => this.settings.HediffCureToRevive(hd) || (hd.def == HediffDefOf_Immortals.IH_regrowing && this.NeedPart((hd as Regrowing_Hediff).forPart)) && hd.Severity < 1f);
-                    hediff = null;
-                    bool canReturn = false;
-                    if (heDiffsEnumerable.Any())
-                    {
-                        hediff = heDiffsEnumerable.RandomElement();
-                        if (hediff != null)
-                        {
-                            healSpeed *= this.settings.HediffHealSpeedDef(hediff.def);
-                            HediffComp_Disappears dissapears = hediff.TryGetComp<HediffComp_Disappears>();
-                            //Check if random hediff is the growing hediff do stuff
-                            if (hediff.def == HediffDefOf_Immortals.IH_regrowing)
-                            {
-                                Regrowing_Hediff growingDif = hediff as Regrowing_Hediff;
-                                hediff.Severity -= ((healSpeed * this.HealingFactor(pawn)) / growingDif.partHp / (2 / this.settings.immortalRegrowSpeed));
-                                if (this.settings.immortalAccumulateFoodNeed != 0)
-                                {
-                                    float foodCost = healSpeed / (imDiff.Severity / 4) * (tickMult * baseHungerSpeed) * this.settings.immortalRegrowFoodCost / 10;
-                                    Hediff foodDiff = null;
-
-                                    if (pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_hungerHolder))
-                                    {
-                                        foodDiff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_hungerHolder);
-                                    }
-                                    else
-                                    {
-                                        foodDiff = pawn.health.AddHediff(HediffDefOf_Immortals.IH_hungerHolder);
-                                    }
-
-                                    foodDiff.Severity -= foodCost;
-                                }
-                            }
-                            //If the hediff is a time based one reduce its time
-                            else if (dissapears != null)
-                            {
-                                float val = 10;
-                                dissapears.CompPostTick(ref val);
-                            }
-                            else
-                            {
-                                if (hediff.def == HediffDefOf_Immortals.IH_DeathTimer)
-                                {
-                                    hediff.Severity -= baseHealSpeed * tickMult;
-                                }
-                                else
-                                {
-                                    hediff.Severity -= healSpeed;
-                                }
-                            }
-                            if (hediff.Severity <= 0.001f)
-                            {
-                                pawn.health.RemoveHediff(hediff);
-                            }
-                        }
-                    }
-                    //Check if we have any parts that need to be regrown more before we can come back
-                    IEnumerable<Hediff> regrowDiffsEnumerable = heDiffsEnumerable.Where(hd => (hd.def == HediffDefOf_Immortals.IH_regrowing && this.NeedPart((hd as Regrowing_Hediff).forPart)));
-                    if (regrowDiffsEnumerable.Count() - heDiffsEnumerable.Count() == 0)
-                    {
-                        canReturn = true;
-                        foreach (Hediff growDiff in regrowDiffsEnumerable)
-                        {
-                            if (growDiff.Severity < 0.5f)
-                            {
-                                canReturn = false;
-                                break;
-                            }
-                        }
-                    }
-                    if (canReturn)
-                    {
-                        this.pawnsToRez.Add(pawn);
-                    }
-                }
+                // Log.Message(deadP.ToString());
+                float severity = 0f;
+                deadP.GetImmortalHediff().TryGetComp<HediffComp_DiscoverableImmortal>().CompPostTick(ref severity);
             }
-            return keep;
         }
 
-        private bool TickLivingImmortal(Pawn pawn, int tickMult)
+        public override void LoadedGame()
         {
-            bool keep = false;
-            if (pawn != null && !pawn.health.Dead)
+            this.StartUp();
+        }
+
+        public void RemoveImmortals()
+        {
+            foreach (Pawn pawn in this.immortalPawns)
             {
-                keep = true;
-                IEnumerable<Hediff> slowDownEnumerable = pawn.health.hediffSet.hediffs;
-                Hediff hediff;
-                float healSpeed = this.GetHealSpeed(pawn) * tickMult;
-
-
-                if (healSpeed != 0)
-                {
-                    float foodSpeed = 1 / healSpeed;
-
-                    //Cure and limit Diseases and Conditions
-                    foreach (Hediff slowDiff in slowDownEnumerable)
-                    {
-                        if (slowDiff.def == HediffDefOf_Immortals.IH_Stunted)
-                        {
-                            break;
-                        }
-                        if (this.settings.hediffSettings.ContainsKey(slowDiff.def))
-                        {
-                            if (!this.settings.HediffBaseCanGet(slowDiff.def))
-                            {
-                                slowDiff.Heal(100f);
-                            }
-                            float maxProg = this.settings.HediffMaxProgress(slowDiff.def);
-                            if (maxProg != -1)
-                            {
-                                if (slowDiff.Severity > maxProg)
-                                {
-                                    slowDiff.Severity = maxProg;
-                                }
-                            }
-                        }
-                        else if (this.settings.oldAgeDefs.Contains(slowDiff.def))
-                        {
-                            slowDiff.Heal(100f);
-                        }
-                        else if (slowDiff.def.injuryProps == null && slowDiff.def.isBad)
-                        {
-                            if (!slowDiff.def.tendable)
-                            {
-                                if (this.settings.canGetConditions)
-                                {
-                                    if (slowDiff.Severity > this.settings.conditionMaxProg)
-                                    {
-                                        slowDiff.Severity = this.settings.conditionMaxProg;
-                                    }
-                                }
-                                else
-                                {
-                                    slowDiff.Heal(100f);
-                                }
-                            }
-                            else
-                            {
-                                if (this.settings.canGetDisease)
-                                {
-                                    if (slowDiff.Severity > this.settings.diseaseMaxProg)
-                                    {
-                                        slowDiff.Severity = this.settings.diseaseMaxProg;
-                                    }
-                                }
-                                else
-                                {
-                                    slowDiff.Heal(100f);
-                                }
-                            }
-                        }
-                    }
-
-                    //Try and Heal pawn of injuries
-
-                    IEnumerable<Hediff> heDiffsEnumerable = pawn.health.hediffSet.hediffs.Where(hd => this.settings.HediffBaseHeal(hd, false) && hd.def != HediffDefOf_Immortals.IH_DeathTimer);
-                  
-                    
-                    hediff = null;
-                    if (heDiffsEnumerable.Any())
-                    {
-                        hediff = heDiffsEnumerable.RandomElement();
-                    }
-
-                    if (hediff != null)
-                    {
-                        healSpeed *= this.settings.HediffHealSpeedDef(hediff.def);
-                        //Add hunger if the hediff is a regrowing part
-                        if (hediff.def == HediffDefOf_Immortals.IH_regrowing)
-                        {
-                            float growMult = 1;
-                            if (pawn.needs.food != null)
-                            {
-                                if (pawn.needs.food.CurLevel >= 0.75f)
-                                {
-                                    growMult = 0.2f;
-                                }
-                                else if (pawn.needs.food.CurLevel >= 0.5f)
-                                {
-                                    growMult = 0.15f;
-                                }
-                                else if (pawn.needs.food.CurLevel <= 0.1f)
-                                {
-                                    growMult = 0.075f;
-                                }
-                            }
-                            hediff.Severity -= (healSpeed / hediff.Part.def.GetMaxHealth(pawn) / (2 / this.settings.immortalRegrowSpeed)) * growMult;
-                            float foodCost = ((healSpeed / foodSpeed * (pawn.needs.food.FoodFallPerTick * tickMult * baseHungerSpeed) * this.settings.immortalRegrowFoodCost)) / 10;
-                            if (pawn.needs.food != null && this.settings.immortalRegrowCostsFood)
-                            {
-                                if (pawn.needs.food.CurLevel > 0)
-                                {
-                                    pawn.needs.food.CurLevel += foodCost;
-                                }
-                                else if (this.settings.immortalAccumulateFoodNeed != 0)
-                                {
-                                    Hediff foodHediff = null;
-                                    if (pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_theHunger))
-                                    {
-                                        foodHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_theHunger);
-                                    }
-                                    else
-                                    {
-                                        foodHediff = pawn.health.AddHediff(HediffDefOf_Immortals.IH_theHunger);
-                                    }
-
-                                    foodHediff.Severity += foodCost * this.settings.immortalAccumulateFoodNeed;
-                               
-                                }
-                            }
-                            //Swap the hegrowing hediff for the adjusting hediff
-                            if (hediff.Severity >= 1 && hediff.Part != null)
-                            {
-                                pawn.health.AddHediff(HediffDefOf_Immortals.IH_adjusting, hediff.Part);
-                                pawn.health.RemoveHediff(hediff);
-                            }
-                        }
-                        //Otherwise just heal the hediff
-                        else
-                        {
-                            hediff.Severity -= healSpeed * this.HealingFactor(pawn);
-                        }
-                    }
-                }
-                else
-                {
-                    keep = false;
-                }
+                this.ClearPawn(pawn);
             }
-            return keep;
+            this.immortalPawns = new List<Pawn>();
+            foreach (Pawn pawn in this.deadPawns)
+            {
+                this.ClearPawn(pawn);
+            }
         }
 
-        private bool TickStuntedImmoral(Pawn pawn, int tickMult)
+        public override void StartedNewGame()
         {
-            Hediff stHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Stunted);
-            Hediff imHediff = pawn.GetImmortalHediff();
-            if (stHediff != null && imHediff != null)
+            this.StartUp();
+        }
+
+        private static bool CheckDistance(IntVec3 vec1, IntVec3 vec2, int distance)
+        {
+            if (GetDistance(vec1, vec2) < distance)
             {
-                int chance = 0;
-                chance = Rand.RangeInclusive(0, 100);
-                if (chance <= this.settings.burnChance * 100)
-                {
-                    float damageNum = Rand.Range(1f, ((float)tickMult) / 1000f * this.settings.burnMult);
-                    DamageInfo damage = new(this.stuntedDmgDef, damageNum);
-                    pawn.TakeDamage(damage);
-                    stHediff.Severity -= damageNum / 25;
-                    imHediff.Severity -= damageNum / 25;
-                    if (imHediff.Severity < 0.6f)
-                    {
-                        imHediff.Severity = 0.6f;
-                    }
-                }
                 return true;
             }
+
             return false;
+        }
+
+        private static void CheckForWitnessesOfSupernatural(Pawn pawn, float distance = 4f, float suspicionFactorWitnessed = 1f, bool resurrection = false, bool regrowlimb = false, bool quickhealing = false)
+        {
+            if (pawn == null) { return; }
+            if (!pawn.Spawned)
+            {
+                if (pawn.Corpse == null) { return; }
+                if (!pawn.Corpse.Spawned) { return; }
+            }
+            if (pawn.IsImmmortal(out Hediff immortalHediff) && immortalHediff.Visible) { return; }
+            // Log.Message(pawn.Label);
+            float suspicionFactor = resurrection ? 0.3f : regrowlimb ? 0.05f : (quickhealing ? (pawn.Dead ? 0.05f : 0.01f) : 0f);
+
+            suspicionFactor *= suspicionFactorWitnessed;
+            var pos = pawn.Dead ? pawn.Corpse.Position : pawn.Position;
+            var map = pawn.Map ?? pawn.Corpse.MapHeld;
+
+            if (map == null) { return; }
+
+            List<Pawn> candidates = map.mapPawns.FreeColonistsSpawned.FindAll(x => x != null && !x.Dead && x.Position.InHorDistOf(pos, distance));
+            if (candidates.NullOrEmpty()) { return; }
+
+            foreach (Pawn otherPawn in candidates)
+            {
+                if (otherPawn == null) { continue; }
+                if (otherPawn == pawn) continue;
+
+                if (otherPawn.Dead || !otherPawn.Awake()) continue;
+                if (!otherPawn.RaceProps.Humanlike) return;
+
+                // if (item is Pawn otherPawn)
+                {
+                    if (!otherPawn.IsQuestLodger() && GenSight.LineOfSightToThing(pos, otherPawn, map))
+                    {
+                        HediffComp_DiscoverableImmortal hedi = immortalHediff.TryGetComp<HediffComp_DiscoverableImmortal>();
+                        if (hedi != null)
+                        {
+                            hedi.suspicionLevel += suspicionFactor;
+                            if (hedi.suspiciousPawns == null) hedi.suspiciousPawns = new();
+                            if (!hedi.suspiciousPawns.Contains(otherPawn.LabelShort))
+                            {
+                                hedi.suspiciousPawns.Add(otherPawn.LabelShort);
+                            }
+                            if (resurrection) { hedi.wasQuickened = true; }
+                            if (regrowlimb) { hedi.wasRegrowingLimbs = true; }
+                            if (quickhealing)
+                            {
+                                if (pawn.Dead) 
+                                    hedi.wasDeadAndHealing = true; 
+                                else 
+                                    hedi.wasHealingFast = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private static int GetDistance(IntVec3 vec1, IntVec3 vec2)
+        {
+            int val = Mathf.RoundToInt((float)Math.Sqrt((Math.Pow(Math.Abs(vec1.x - vec2.x), 2) + Math.Pow(Math.Abs(vec1.z - vec2.z), 2))));
+            return val;
+        }
+
+        private void HealScars(Pawn pawn, Hediff imDiff, int tickMult)
+        {
+            IEnumerable<Hediff> scars;
+            Hediff scar;
+
+            scars = pawn.health.hediffSet.hediffs.InRandomOrder().Where(hediff => hediff.def.injuryProps != null && hediff.IsPermanent() && hediff.def != HediffDefOf.MissingBodyPart);
+
+            float healValue = 0.000001125f;
+            healValue *= imDiff.Severity * this.settings.baseHealSpeed * this.HealingFactor(pawn) * this.settings.scarHealSpeed * tickMult;
+
+            if (scars != null && scars.Any())
+            {
+                scar = scars.First();
+                if (scar != null)
+                {
+                    scar.Severity -= healValue;
+                    CheckForWitnessesOfSupernatural(pawn, 4f, healValue, quickhealing: true);
+                }
+            }
         }
 
         private bool RareTickLivingImmortal(Pawn pawn, int tickMult)
@@ -567,7 +571,6 @@ namespace Immortals
                                 hediff.Severity = 0;
                             }
                         }
-
                     }
                     /*
                     IEnumerable<Hediff> slowHediffs = pawn.health.hediffSet.hediffs.Where(slowDif => settings.hediffSettings.ContainsKey(slowDif.def));
@@ -650,311 +653,203 @@ namespace Immortals
                 }
             }
         }
-        private void HealScars(Pawn pawn, Hediff imDiff, int tickMult)
-        {
-            IEnumerable<Hediff> scars;
-            Hediff scar;
-
-            scars = pawn.health.hediffSet.hediffs.InRandomOrder().Where(hediff => hediff.def.injuryProps != null && hediff.IsPermanent() && hediff.def != HediffDefOf.MissingBodyPart);
-
-            float healValue = 0.000001125f;
-            healValue *= imDiff.Severity * this.settings.baseHealSpeed * this.HealingFactor(pawn) * this.settings.scarHealSpeed * tickMult;
-
-            if (scars != null && scars.Any())
-            {
-                scar = scars.First();
-                if (scar != null)
-                {
-                    scar.Severity -= healValue;
-                }
-            }
-        }
 
         private void RezPawn(Pawn pawn)
         {
-            if (pawn != null && pawn.Corpse != null)
+            if (pawn == null || pawn.Corpse == null)
             {
-                if (pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_ImpaledHeart))
-                {
-                    return;
-                }
+                return;
+            }
+            if (pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_ImpaledHeart))
+            {
+                return;
+            }
 
-                Pawn_NeedsTracker pawnNeeds = pawn.needs;
-                List<BodyPartRecord> partsToRestore = new();
-                foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
+            Pawn_NeedsTracker pawnNeeds = pawn.needs;
+            List<BodyPartRecord> partsToRestore = new();
+            foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
+            {
+                if (hediff.GetType() == typeof(Hediff_MissingPart))
                 {
-                    if (hediff.GetType() == typeof(Hediff_MissingPart))
+                    Hediff_MissingPart partDiff = hediff as Hediff_MissingPart;
+                    if (partDiff.Part != null)
                     {
-                        Hediff_MissingPart partDiff = hediff as Hediff_MissingPart;
-                        if (partDiff.Part != null)
+                        if (this.NeedPart(partDiff.Part))
                         {
-                            if (this.NeedPart(partDiff.Part))
-                            {
-                                partsToRestore.Add(partDiff.Part);
-                            }
+                            partsToRestore.Add(partDiff.Part);
                         }
                     }
                 }
-                foreach (BodyPartRecord part in partsToRestore)
-                {
-                    pawn.health.RestorePart(part);
-                }
-                Pawn_HealthTracker health = pawn.health;
-                HediffSet hediffSet = health.hediffSet;
+            }
+            foreach (BodyPartRecord part in partsToRestore)
+            {
+                pawn.health.RestorePart(part);
+            }
+            Pawn_HealthTracker health = pawn.health;
+            HediffSet hediffSet = health.hediffSet;
 
-                pawn.health.hediffSet = new HediffSet(pawn);
-                ImmunityHandler immunity = health.immunity;
-                pawn.health.immunity = new ImmunityHandler(pawn);
+            pawn.health.hediffSet = new HediffSet(pawn);
+            ImmunityHandler immunity = health.immunity;
+            pawn.health.immunity = new ImmunityHandler(pawn);
 
-                List<BodyPartRecord> restoreParts = new();
-                Caravan pawnCaravan = null;
-                int tile = -1;
-                if (!pawn.Corpse.Spawned)
+            List<BodyPartRecord> restoreParts = new();
+            Caravan pawnCaravan = null;
+            int tile = -1;
+            if (!pawn.Corpse.Spawned)
+            {
+                if (pawn.Corpse != null)
                 {
-                    if (pawn.Corpse != null)
-                    {
-                        tile = pawn.Corpse.Tile;
-                    }
-                    if (this.deadPawnMaps[pawn] != null)
-                    {
-                        GenSpawn.Spawn(pawn.Corpse, pawn.PositionHeld, pawn.MapHeld);
-                    }
+                    tile = pawn.Corpse.Tile;
                 }
-                if (tile != -1)
+                if (this.deadPawnMaps[pawn] != null)
                 {
-                    foreach (Caravan caravan in Find.World.worldObjects.AllWorldObjects.Where(checkObject => checkObject is Caravan))
-                    {
-                        if (caravan.AllThings.Contains(pawn.Corpse))
-                        {
-                            pawnCaravan = caravan;
-                        }
-                    }
+                    GenSpawn.Spawn(pawn.Corpse, pawn.PositionHeld, pawn.MapHeld);
                 }
-
-                Thing storage = pawn.Corpse.StoringThing();
-                if (storage != null)
+            }
+            if (tile != -1)
+            {
+                foreach (Caravan caravan in Find.World.worldObjects.AllWorldObjects.Where(checkObject => checkObject is Caravan))
                 {
-                    //pawn.Corpse.
-                    GenSpawn.Spawn(pawn.Corpse, storage.Position, storage.Map);
-                }
-                ResurrectionUtility.Resurrect(pawn);
-
-                if (pawnCaravan != null)
-                {
-                    pawnCaravan.AddPawn(pawn, false);
-                }
-                //pawn.SetFaction(DefDatabase<FactionDef>.GetNamed(""))
-                foreach (Hediff hediff in hediffSet.hediffs)
-                {
-                    if (hediff.TendableNow())
+                    if (caravan.AllThings.Contains(pawn.Corpse))
                     {
-                        if (hediff is HediffWithComps hediffWithComps)
-                        {
-                            HediffComp_TendDuration hediffComp_TendDuration = hediffWithComps.TryGetComp<HediffComp_TendDuration>();
-
-                            hediffComp_TendDuration.tendQuality = 0f;
-                            hediffComp_TendDuration.tendTicksLeft = Find.TickManager.TicksGame;
-                        }
-                    }
-                    if (hediff.GetType() == typeof(Hediff_MissingPart))
-                    {
-                        Hediff_MissingPart partDiff = hediff as Hediff_MissingPart;
-                        partDiff.IsFresh = false;
+                        pawnCaravan = caravan;
                     }
                 }
+            }
 
+            Thing storage = pawn.Corpse.StoringThing();
+            if (storage != null)
+            {
+                //pawn.Corpse.
+                GenSpawn.Spawn(pawn.Corpse, storage.Position, storage.Map);
+            }
+            ResurrectionUtility.Resurrect(pawn);
 
-                pawn.health.hediffSet = hediffSet;
-
-
-                pawn.needs.AddOrRemoveNeedsAsAppropriate();
-                //pawn.TakeDamage(dmg);
-
-                if (pawn.health.immunity != null)
+            if (pawnCaravan != null)
+            {
+                pawnCaravan.AddPawn(pawn, false);
+            }
+            //pawn.SetFaction(DefDatabase<FactionDef>.GetNamed(""))
+            foreach (Hediff hediff in hediffSet.hediffs)
+            {
+                if (hediff.TendableNow())
                 {
-                    pawn.health.immunity = immunity;
-                }
-
-                if (pawn.needs != null)
-                {
-                    if (pawn.needs.food != null)
+                    if (hediff is HediffWithComps hediffWithComps)
                     {
-                        pawn.needs.food.CurLevelPercentage = 0;
-                    }
+                        HediffComp_TendDuration hediffComp_TendDuration = hediffWithComps.TryGetComp<HediffComp_TendDuration>();
 
-                    if (pawn.needs.rest != null && pawn.needs.rest.RestFallPerTick > 0)
-                    {
-                        pawn.needs.rest.CurLevelPercentage = 1;
+                        hediffComp_TendDuration.tendQuality = 0f;
+                        hediffComp_TendDuration.tendTicksLeft = Find.TickManager.TicksGame;
                     }
                 }
-                Hediff dsHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_DeathStasis);
-                if (dsHediff == null)
+                if (hediff.GetType() == typeof(Hediff_MissingPart))
                 {
-                    dsHediff = pawn.health.AddHediff(HediffDefOf_Immortals.IH_DeathStasis);
-                    dsHediff.Severity = 0.25f;
+                    Hediff_MissingPart partDiff = hediff as Hediff_MissingPart;
+                    partDiff.IsFresh = false;
                 }
-                Hediff stHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_StuntedProc);
-                if (stHediff != null)
+            }
+
+            pawn.health.hediffSet = hediffSet;
+
+            pawn.needs.AddOrRemoveNeedsAsAppropriate();
+            //pawn.TakeDamage(dmg);
+
+            if (pawn.health.immunity != null)
+            {
+                pawn.health.immunity = immunity;
+            }
+
+            if (pawn.needs != null)
+            {
+                if (pawn.needs.food != null)
                 {
-                    Hediff newStHediff = pawn.health.AddHediff(HediffDefOf_Immortals.IH_Stunted);
-                    newStHediff.Severity = Rand.Range(1, 4);
-                    pawn.health.RemoveHediff(stHediff);
+                    pawn.needs.food.CurLevelPercentage = 0;
                 }
 
-                Hediff imHediff = pawn.health.hediffSet.GetHediffs<Immortal_Hediff>().First();
-
-                if (imHediff.Severity <= 0.5f)
+                if (pawn.needs.rest != null && pawn.needs.rest.RestFallPerTick > 0)
                 {
-                    Hediff retHediff = pawn.health.AddHediff(HediffDefOf_Immortals.IH_revivedFirst);
-                    retHediff.Severity = ((float)Rand.Range(50, 125)) / 100;
-                    imHediff.Severity = 1f;
+                    pawn.needs.rest.CurLevelPercentage = 1;
+                }
+            }
+            Hediff dsHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_DeathStasis);
+            if (dsHediff == null)
+            {
+                dsHediff = pawn.health.AddHediff(HediffDefOf_Immortals.IH_DeathStasis);
+                dsHediff.Severity = 0.25f;
+            }
+            Hediff stHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_StuntedProc);
+            if (stHediff != null)
+            {
+                Hediff newStHediff = pawn.health.AddHediff(HediffDefOf_Immortals.IH_Stunted);
+                newStHediff.Severity = Rand.Range(1, 4);
+                pawn.health.RemoveHediff(stHediff);
+            }
+
+            Hediff imHediff = pawn.health.hediffSet.GetHediffs<Immortal_Hediff>().First();
+
+            if (imHediff.Severity <= 0.5f)
+            {
+                Hediff retHediff = pawn.health.AddHediff(HediffDefOf_Immortals.IH_revivedFirst);
+                retHediff.Severity = ((float)Rand.Range(50, 125)) / 100;
+                imHediff.Severity = 1f;
+            }
+            else
+            {
+                Hediff retHediff;
+                if (pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_revived))
+                {
+                    retHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_revived);
                 }
                 else
                 {
-                    Hediff retHediff;
-                    if (pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_revived))
-                    {
-                        retHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_revived);
-                    }
-                    else
-                    {
-                        retHediff = pawn.health.AddHediff(HediffDefOf_Immortals.IH_revived);
-                    }
-
-                    if (retHediff != null)
-                    {
-                        retHediff.Severity = ((float)Rand.Range(50, 125)) / 100;
-                    }
-
-                    if (this.settings.deathEffectVal != 0)
-                    {
-                        imHediff.Severity += this.settings.deathEffectVal;
-                    }
-                    switch (this.settings.deathEffectVal)
-                    {
-                        case -1: imHediff.Severity -= 0.1f; break;
-                        case 1: imHediff.Severity += 0.1f; break;
-                    }
-                    if (imHediff.Severity < 0.6)
-                    {
-                        imHediff.Severity = 0.6f;
-                    }
+                    retHediff = pawn.health.AddHediff(HediffDefOf_Immortals.IH_revived);
                 }
 
-                if (this.settings.immortalAccumulateFoodNeed != 0)
+                if (retHediff != null)
                 {
-                    if (pawn.needs != null && pawn.needs.food != null)
-                    {
-                        if (pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_hungerHolder))
-                        {
-                            Hediff foodHoldHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_hungerHolder);
-                            Hediff foodHediff;
-                            if (pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_theHunger))
-                            {
-                                foodHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_theHunger);
-                            }
-                            else
-                            {
-                                foodHediff = pawn.health.AddHediff(HediffDefOf_Immortals.IH_theHunger);
-                            }
+                    retHediff.Severity = ((float)Rand.Range(50, 125)) / 100;
+                }
 
-                            foodHediff.Severity += foodHoldHediff.Severity * pawn.needs.food.FoodFallPerTick * 10;
+                if (this.settings.deathEffectVal != 0)
+                {
+                    imHediff.Severity += this.settings.deathEffectVal;
+                }
+                switch (this.settings.deathEffectVal)
+                {
+                    case -1: imHediff.Severity -= 0.1f; break;
+                    case 1: imHediff.Severity += 0.1f; break;
+                }
+                if (imHediff.Severity < 0.6)
+                {
+                    imHediff.Severity = 0.6f;
+                }
+            }
+
+            if (this.settings.immortalAccumulateFoodNeed != 0)
+            {
+                if (pawn.needs != null && pawn.needs.food != null)
+                {
+                    if (pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_hungerHolder))
+                    {
+                        Hediff foodHoldHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_hungerHolder);
+                        Hediff foodHediff;
+                        if (pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_theHunger))
+                        {
+                            foodHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_theHunger);
                         }
+                        else
+                        {
+                            foodHediff = pawn.health.AddHediff(HediffDefOf_Immortals.IH_theHunger);
+                        }
+
+                        foodHediff.Severity += foodHoldHediff.Severity * pawn.needs.food.FoodFallPerTick * 10;
                     }
                 }
-                this.AddImmortal(pawn, true);
             }
+            this.AddImmortal(pawn, true);
+            CheckForWitnessesOfSupernatural(pawn, 24f, resurrection: true);
 
-        }
-
-        private static bool CheckDistance(IntVec3 vec1, IntVec3 vec2, int distance)
-        {
-            if (GetDistance(vec1, vec2) < distance)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        private static int GetDistance(IntVec3 vec1, IntVec3 vec2)
-        {
-            int val = Mathf.RoundToInt((float)Math.Sqrt((Math.Pow(Math.Abs(vec1.x - vec2.x), 2) + Math.Pow(Math.Abs(vec1.z - vec2.z), 2))));
-            return val;
-
-        }
-
-
-        public override void StartedNewGame()
-        {
-            this.StartUp();
-        }
-
-        public override void LoadedGame()
-        {
-            this.StartUp();
-        }
-
-        public void RemoveImmortals()
-        {
-            foreach (Pawn pawn in this.immortalPawns)
-            {
-                this.ClearPawn(pawn);
-            }
-            this.immortalPawns = new List<Pawn>();
-            foreach (Pawn pawn in this.deadPawns)
-            {
-                this.ClearPawn(pawn);
-            }
-
-        }
-
-        public static void RollImmortals()
-        {
-            foreach (Pawn pawn in Find.CurrentMap.mapPawns.AllPawns.Concat(Find.WorldPawns.AllPawnsAliveOrDead))
-            {
-                ChanceAddPawn(pawn);
-            }
-        }
-
-        public void ClearPawn(Pawn pawn)
-        {
-            Hediff removeDif = pawn.GetImmortalHediff();
-            if (removeDif != null)
-            {
-                pawn.health.RemoveHediff(removeDif);
-            }
-
-            removeDif = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_DeathStasis);
-            if (removeDif != null)
-            {
-                pawn.health.RemoveHediff(removeDif);
-            }
-
-            removeDif = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_DeathTimer);
-            if (removeDif != null)
-            {
-                pawn.health.RemoveHediff(removeDif);
-            }
-
-            removeDif = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Stunted);
-            if (removeDif != null)
-            {
-                pawn.health.RemoveHediff(removeDif);
-            }
-
-            while (pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_regrowing) != null)
-            {
-                pawn.health.RemoveHediff(pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_regrowing));
-            }
-        }
-
-        public static void ChanceAddPawn(Pawn pawn)
-        {
-            if (Immortals_DesignatorUtility.HasConciousnessPart(pawn))
-            {
-                ImmortalsHarmony.ChanceAddImmortal(pawn);
-            }
+            Find.LetterStack.ReceiveLetter(pawn.LabelShortCap + " Revived", "Pawn was resurrected", ((pawn.Faction == Faction.OfPlayer && !pawn.IsQuestLodger() ? LetterDefOf.PositiveEvent : pawn.Faction.HostileTo(Faction.OfPlayer) ? LetterDefOf.NegativeEvent : LetterDefOf.NeutralEvent)), pawn);
         }
 
         private void SetRecovery(Pawn pawn)
@@ -1006,149 +901,437 @@ namespace Immortals
                     this.recoverValues.Add(pawn, healValues);
                 }
             }
-
         }
 
-        public void AddImmortal(Pawn pawn, bool flash)
+        private void StartUp()
         {
-            if (pawn != null)
+            if (this.immortalPawns == null)
             {
-                if (this.immortalPawns == null)
-                {
-                    Log.Message("Pawns is null");
-                }
+                this.immortalPawns = new List<Pawn>();
+            }
 
-                if (this.immortalPawns.Contains(pawn))
-                {
-                    return;
-                }
+            if (this.deadPawns == null)
+            {
+                this.deadPawns = new List<Pawn>();
+            }
 
-                if (this.CanHeal(pawn))
-                {
-                    if (pawn.Map != null && flash)
-                    {
-                        pawn.Map.weatherManager.eventHandler.AddEvent(new WeatherEvent_Quickening(pawn.Map, pawn.Position, 0));
-                    }
+            if (this.deadPawnMaps == null)
+            {
+                this.deadPawnMaps = new Dictionary<Pawn, Map>();
+            }
 
-                    this.immortalPawns.Add(pawn);
-                    if (this.deadPawns.Contains(pawn))
-                    {
-                        this.deadPawns.Remove(pawn);
-                    }
-                    if (this.deadPawnMaps.ContainsKey(pawn))
-                    {
-                        this.deadPawnMaps.Remove(pawn);
-                    }
-                }
-                IEnumerable<Hediff> hediffs = pawn.health.hediffSet.hediffs.ToList();
-                IEnumerable<Hediff> missingDifs = pawn.health.hediffSet.hediffs.Where(checkDif => checkDif.def == HediffDefOf.MissingBodyPart);
-                foreach (Hediff hediff in hediffs)
+            if (this.pawnsToRez == null)
+            {
+                this.pawnsToRez = new List<Pawn>();
+            }
+
+            if (this.stuntedPawns == null)
+            {
+                this.stuntedPawns = new List<Pawn>();
+            }
+
+            this.rareTick = 0;
+
+            this.settings = LoadedModManager.GetMod<Immortals_Mod>().GetSettings<Immortals_Settings>();
+            //ReLoadAilments();
+            DamageDef dmgDef = DamageDefOf.Blunt;
+            this.stuntedDmgDef = DefDatabase<DamageDef>.GetNamed("IH_internalBurn");
+            this.dmg = new DamageInfo(dmgDef, 1, 0);
+            this.sourceNeeds = new List<string>
+            {
+                "ConsciousnessSource",
+                "BloodPumpingSource",
+                "BloodFiltrationLiver",
+                "BreathingSource",
+                "MetabolismSource"
+            };
+
+            // immortalHediff           = HeDiffDefOf_Immortals.IH_Immortal;
+            // this.deathStasisHediff   = HeDiffDefOf_Immortals.IH_DeathStasis;
+            // this.stuntedHediff       = HeDiffDefOf_Immortals.IH_Stunted;
+            // this.stuntedProcHediff   = HeDiffDefOf_Immortals.IH_StuntedProc;
+            // this.stuntedBurnHediff   = HeDiffDefOf_Immortals.IH_Burn;
+            // this.timerHediff         = HeDiffDefOf_Immortals.IH_DeathTimer;
+            // this.growingHediff       = HeDiffDefOf_Immortals.IH_regrowing;
+            // this.missingHediff       = HediffDefOf.MissingBodyPart;
+            // this.adjustingHediff     = HeDiffDefOf_Immortals.IH_adjusting;
+            // this.returnedHediff      = HeDiffDefOf_Immortals.IH_revived;
+            // this.firstReturnedHediff = HeDiffDefOf_Immortals.IH_revivedFirst;
+            // this.hungerHediff        = HeDiffDefOf_Immortals.IH_theHunger;
+            // this.hungerHolderHediff  = HeDiffDefOf_Immortals.IH_hungerHolder;
+            // this.impaledHeart        = HeDiffDefOf_Immortals.IH_ImpaledHeart;
+
+            // this.nemnirHediff          = HeDiffDefOf_Immortals.IH_NemnirHigh;
+            // this.komaHediff            = HeDiffDefOf_Immortals.IH_KomaHigh;
+            // this.mortalisCrystalHediff = HeDiffDefOf_Immortals.IH_MortalisCrystalImplant;
+
+            // this.halfCyclerHediff = HeDiffDefOf_Immortals.CircadianHalfCycler;
+            this.recoverValues = new Dictionary<Pawn, Dictionary<float, float>>();
+
+            //getsPermanent = DefDatabase<HediffComp>.GetNamed("HediffComp_GetsPermanent");
+
+            IEnumerable<Pawn> allImmortalPawns = Find.CurrentMap.mapPawns.AllPawns.Concat(Find.WorldPawns.AllPawnsAliveOrDead);
+
+            foreach (Pawn pawn in allImmortalPawns)
+            {
+                if (pawn != null && (!pawn.Dead || pawn.Corpse != null) && this.CanHeal(pawn))
                 {
-                    if (hediff != null && hediff.def == HediffDefOf_Immortals.IH_regrowing)
+                    if (Immortals_DesignatorUtility.HasConciousnessPart(pawn))
                     {
-                        Regrowing_Hediff regrowDif = hediff as Regrowing_Hediff;
-                        if (regrowDif.forPart != null)
+                        if (pawn.Dead)
                         {
-                            foreach (Hediff partDif in missingDifs)
-                            {
-                                if (partDif.Part == regrowDif.forPart)
-                                {
-                                    pawn.health.RemoveHediff(partDif);
-                                    break;
-                                }
-                            }
+                            this.AddDeadImmortal(pawn, false);
                         }
                         else
                         {
-                            pawn.health.RemoveHediff(regrowDif);
-                        }
-                    }
-                }
-                foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
-                {
-                    if (hediff != null && hediff.def == HediffDefOf_Immortals.IH_regrowing)
-                    {
-                        if (hediff is Regrowing_Hediff growDiff && growDiff.forPart != null)
-                        {
-                            hediff.Part = growDiff.forPart;
-                            growDiff.partHp = (int)Math.Round(growDiff.Part.def.hitPoints * pawn.HealthScale);
+                            this.AddImmortal(pawn, false);
                         }
                     }
                 }
             }
+
+            this.loaded = true;
+            this.firstTick = true;
         }
 
-        public void AddDeadImmortal(Pawn pawn, bool strike = true)
+        private bool TickDeadImmortal(Pawn pawn, int tickMult)
         {
-            if (pawn == null)
+            bool keep = false;
+            if (pawn.health.Dead && Immortals_DesignatorUtility.HasConciousnessPart(pawn))
             {
-                return;
-            }
-
-            if (this.immortalPawns.Contains(pawn))
-            {
-                this.immortalPawns.Remove(pawn);
-            }
-
-            if (pawn.IsImmmortal())
-            {
-                Hediff dsHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_DeathStasis);
-                if (dsHediff != null)
+                if (pawn.Corpse != null)
                 {
-                    dsHediff.Severity = 1;
-                }
+                    pawn.Position = pawn.Corpse.Position;
+                    //set healSpeed based on time past
+                    float healSpeed = (baseHealSpeed * this.settings.baseHealSpeed) * tickMult;
 
-                if (Immortals_DesignatorUtility.HasConciousnessPart(pawn) || this.settings.noBrainCheat)
-                {
-                    if (pawn.Corpse != null && pawn.Corpse.Map == null)
+                    CompRottable compRottable = pawn.Corpse.GetComp<CompRottable>();
+                    Hediff hediff;
+                    Hediff imDiff = pawn.GetImmortalHediff();
+                    Hediff stundDiff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Stunted);
+
+                    //Stop pawns from fully rotting
+                    if (compRottable != null)
                     {
-                        Map eventMap;
-                        //eventMap = CaravanIncidentUtility.GetOrGenerateMapForIncident()
-                    }
-                    if (!pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_DeathTimer))
-                    {
-                        pawn.health.AddHediff(HediffDefOf_Immortals.IH_DeathTimer);
-                        pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_DeathTimer).Severity = 3f;
-                    }
-                    if (pawn.Corpse != null)
-                    {
-                        if (!this.deadPawnMaps.ContainsKey(pawn))
+                        if (compRottable.RotProgress < 80000)
                         {
-                            this.deadPawnMaps.Add(pawn, pawn.Corpse.MapHeld);
+                            compRottable.RotProgress -= 0.5f * tickMult;
+                        }
+                        else if (compRottable.RotProgress < 140000)
+                        {
+                            compRottable.RotProgress -= 0.75f * tickMult;
                         }
                         else
                         {
-                            this.deadPawnMaps[pawn] = pawn.Corpse.MapHeld;
+                            compRottable.RotProgress = 140000;
                         }
                     }
-                    IEnumerable<Hediff> pawnHediffs = pawn.health.hediffSet.hediffs.ToList();
-                    foreach (Hediff hediff in pawnHediffs)
+
+                    if (pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_Immortal))
                     {
-                        if (hediff.GetType() == typeof(Hediff_MissingPart))
+                        keep = true;
+
+                        if (imDiff != null)
                         {
-                            Hediff_MissingPart partDiff = hediff as Hediff_MissingPart;
-                            if (partDiff.Part != null)
+                            healSpeed *= imDiff.Severity;
+                            if (imDiff.Severity <= 0.5f)
                             {
-                                if ((this.NeedPart(partDiff.Part) && !pawn.health.hediffSet.hediffs.Where(checkDif => checkDif is Regrowing_Hediff growCheck && growCheck.forPart == partDiff.Part).Any()))
+                                healSpeed *= this.settings.firstDeathHealFactor;
+                                healSpeed *= 2;
+                            }
+                        }
+                    }
+
+                    //Get a list of all injuries that need to be cured and organs that need to be regrown
+                    IEnumerable<Hediff> heDiffsEnumerable = pawn.health.hediffSet.hediffs.Where(hd => this.settings.HediffCureToRevive(hd) || (hd.def == HediffDefOf_Immortals.IH_regrowing && this.NeedPart((hd as Regrowing_Hediff).forPart)) && hd.Severity < 1f);
+                    hediff = null;
+                    bool canReturn = false;
+                    if (heDiffsEnumerable.Any())
+                    {
+                        hediff = heDiffsEnumerable.RandomElement();
+                        if (hediff != null)
+                        {
+                            healSpeed *= this.settings.HediffHealSpeedDef(hediff.def);
+                            HediffComp_Disappears dissapears = hediff.TryGetComp<HediffComp_Disappears>();
+                            //Check if random hediff is the growing hediff do stuff
+                            if (hediff.def == HediffDefOf_Immortals.IH_regrowing)
+                            {
+                                Regrowing_Hediff growingDif = hediff as Regrowing_Hediff;
+                                float healValue = ((healSpeed * this.HealingFactor(pawn)) / growingDif.partHp / (2 / this.settings.immortalRegrowSpeed));
+                                hediff.Severity -= healValue;
+
+                                CheckForWitnessesOfSupernatural(pawn, 4f, healValue, regrowlimb: true);
+
+                                if (this.settings.immortalAccumulateFoodNeed != 0)
                                 {
-                                    BodyPartRecord part = partDiff.Part;
-                                    Regrowing_Hediff newReGrowing = pawn.health.AddHediff(HediffDefOf_Immortals.IH_regrowing) as Regrowing_Hediff;
-                                    newReGrowing.forPart = part;
-                                    newReGrowing.Severity = 0.01f;
-                                    newReGrowing.partHp = part.def.hitPoints;
+                                    float foodCost = healSpeed / (imDiff.Severity / 4) * (tickMult * baseHungerSpeed) * this.settings.immortalRegrowFoodCost / 10;
+                                    Hediff foodDiff = null;
+
+                                    if (pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_hungerHolder))
+                                    {
+                                        foodDiff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_hungerHolder);
+                                    }
+                                    else
+                                    {
+                                        foodDiff = pawn.health.AddHediff(HediffDefOf_Immortals.IH_hungerHolder);
+                                    }
+
+                                    foodDiff.Severity -= foodCost;
+                                }
+                            }
+                            //If the hediff is a time based one reduce its time
+                            else if (dissapears != null)
+                            {
+                                float val = 10;
+                                dissapears.CompPostTick(ref val);
+                                CheckForWitnessesOfSupernatural(pawn, 4f, quickhealing: true);
+                            }
+                            else
+                            {
+                                if (hediff.def == HediffDefOf_Immortals.IH_DeathTimer)
+                                {
+                                    hediff.Severity -= baseHealSpeed * tickMult;
+                                }
+                                else
+                                {
+                                    hediff.Severity -= healSpeed;
+                                    CheckForWitnessesOfSupernatural(pawn, 4f, healSpeed, quickhealing: true);
+                                }
+                            }
+                            if (hediff.Severity <= 0.001f)
+                            {
+                                pawn.health.RemoveHediff(hediff);
+                                CheckForWitnessesOfSupernatural(pawn, 4f, quickhealing: true);
+                            }
+                        }
+                    }
+                    //Check if we have any parts that need to be regrown more before we can come back
+                    IEnumerable<Hediff> regrowDiffsEnumerable = heDiffsEnumerable.Where(hd => (hd.def == HediffDefOf_Immortals.IH_regrowing && this.NeedPart((hd as Regrowing_Hediff).forPart)));
+                    if (regrowDiffsEnumerable.Count() - heDiffsEnumerable.Count() == 0)
+                    {
+                        canReturn = true;
+                        foreach (Hediff growDiff in regrowDiffsEnumerable)
+                        {
+                            if (growDiff.Severity < 0.5f)
+                            {
+                                canReturn = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (canReturn)
+                    {
+                        this.pawnsToRez.Add(pawn);
+                    }
+                }
+            }
+            return keep;
+        }
+
+        private bool TickLivingImmortal(Pawn pawn, int tickMult)
+        {
+            bool keep = false;
+            if (pawn?.health != null && !pawn.health.Dead)
+            {
+                keep = true;
+                IEnumerable<Hediff> slowDownEnumerable = pawn.health.hediffSet.hediffs;
+                Hediff hediff;
+                float healSpeed = this.GetHealSpeed(pawn) * tickMult;
+
+                if (healSpeed != 0)
+                {
+                    float foodSpeed = 1 / healSpeed;
+
+                    //Cure and limit Diseases and Conditions
+                    foreach (Hediff slowDiff in slowDownEnumerable)
+                    {
+                        if (slowDiff.def == HediffDefOf_Immortals.IH_Stunted)
+                        {
+                            break;
+                        }
+                        if (this.settings.hediffSettings.ContainsKey(slowDiff.def))
+                        {
+                            if (!this.settings.HediffBaseCanGet(slowDiff.def))
+                            {
+                                slowDiff.Heal(100f);
+                            }
+                            float maxProg = this.settings.HediffMaxProgress(slowDiff.def);
+                            if (maxProg != -1)
+                            {
+                                if (slowDiff.Severity > maxProg)
+                                {
+                                    slowDiff.Severity = maxProg;
+                                }
+                            }
+                        }
+                        else if (this.settings.oldAgeDefs.Contains(slowDiff.def))
+                        {
+                            slowDiff.Heal(100f);
+                        }
+                        else if (slowDiff.def.injuryProps == null && slowDiff.def.isBad)
+                        {
+                            if (!slowDiff.def.tendable)
+                            {
+                                if (this.settings.canGetConditions)
+                                {
+                                    if (slowDiff.Severity > this.settings.conditionMaxProg)
+                                    {
+                                        slowDiff.Severity = this.settings.conditionMaxProg;
+                                    }
+                                }
+                                else
+                                {
+                                    slowDiff.Heal(100f);
+                                }
+                            }
+                            else
+                            {
+                                if (this.settings.canGetDisease)
+                                {
+                                    if (slowDiff.Severity > this.settings.diseaseMaxProg)
+                                    {
+                                        slowDiff.Severity = this.settings.diseaseMaxProg;
+                                    }
+                                }
+                                else
+                                {
+                                    slowDiff.Heal(100f);
                                 }
                             }
                         }
                     }
-                    this.SetRecovery(pawn);
+
+                    //Try and Heal pawn of injuries
+
+                    IEnumerable<Hediff> heDiffsEnumerable = pawn.health.hediffSet.hediffs.Where(hd => this.settings.HediffBaseHeal(hd, false) && hd.def != HediffDefOf_Immortals.IH_DeathTimer);
+
+                    hediff = null;
+                    if (heDiffsEnumerable.Any())
+                    {
+                        hediff = heDiffsEnumerable.RandomElement();
+                    }
+
+                    if (hediff != null)
+                    {
+                        healSpeed *= this.settings.HediffHealSpeedDef(hediff.def);
+                        //Add hunger if the hediff is a regrowing part
+                        if (hediff.def == HediffDefOf_Immortals.IH_regrowing)
+                        {
+                            float growMult = 1;
+                            if (pawn.needs.food != null)
+                            {
+                                if (pawn.needs.food.CurLevel >= 0.75f)
+                                {
+                                    growMult = 0.2f;
+                                }
+                                else if (pawn.needs.food.CurLevel >= 0.5f)
+                                {
+                                    growMult = 0.15f;
+                                }
+                                else if (pawn.needs.food.CurLevel <= 0.1f)
+                                {
+                                    growMult = 0.075f;
+                                }
+                            }
+                            var healValue = (healSpeed / hediff.Part.def.GetMaxHealth(pawn) / (2 / this.settings.immortalRegrowSpeed)) * growMult;
+                            hediff.Severity -= healValue;
+                            CheckForWitnessesOfSupernatural(pawn, 4f, healValue, regrowlimb: true);
+
+                            float foodCost = ((healSpeed / foodSpeed * (pawn.needs.food.FoodFallPerTick * tickMult * baseHungerSpeed) * this.settings.immortalRegrowFoodCost)) / 10;
+                            if (pawn.needs.food != null && this.settings.immortalRegrowCostsFood)
+                            {
+                                if (pawn.needs.food.CurLevel > 0)
+                                {
+                                    pawn.needs.food.CurLevel += foodCost;
+                                }
+                                else if (this.settings.immortalAccumulateFoodNeed != 0)
+                                {
+                                    Hediff foodHediff = null;
+                                    if (pawn.health.hediffSet.HasHediff(HediffDefOf_Immortals.IH_theHunger))
+                                    {
+                                        foodHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_theHunger);
+                                    }
+                                    else
+                                    {
+                                        foodHediff = pawn.health.AddHediff(HediffDefOf_Immortals.IH_theHunger);
+                                    }
+
+                                    foodHediff.Severity += foodCost * this.settings.immortalAccumulateFoodNeed;
+                                }
+                            }
+                            //Swap the hegrowing hediff for the adjusting hediff
+                            if (hediff.Severity >= 1 && hediff.Part != null)
+                            {
+                                pawn.health.AddHediff(HediffDefOf_Immortals.IH_adjusting, hediff.Part);
+                                pawn.health.RemoveHediff(hediff);
+                            }
+                        }
+                        //Otherwise just heal the hediff
+                        else
+                        {
+                            float healValue = healSpeed * this.HealingFactor(pawn);
+                            hediff.Severity -= healValue;
+
+                            CheckForWitnessesOfSupernatural(pawn, 4f, healValue, quickhealing: true);
+                        }
+                    }
                 }
                 else
                 {
-                    this.CheckQuickening(pawn);
+                    keep = false;
                 }
             }
+            return keep;
         }
+
+        private bool TickStuntedImmoral(Pawn pawn, int tickMult)
+        {
+            Hediff stHediff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Stunted);
+            Hediff imHediff = pawn.GetImmortalHediff();
+            if (stHediff != null && imHediff != null)
+            {
+                int chance = 0;
+                chance = Rand.RangeInclusive(0, 100);
+                if (chance <= this.settings.burnChance * 100)
+                {
+                    float damageNum = Rand.Range(1f, ((float)tickMult) / 1000f * this.settings.burnMult);
+                    DamageInfo damage = new(this.stuntedDmgDef, damageNum);
+                    pawn.TakeDamage(damage);
+                    stHediff.Severity -= damageNum / 25;
+                    imHediff.Severity -= damageNum / 25;
+                    if (imHediff.Severity < 0.6f)
+                    {
+                        imHediff.Severity = 0.6f;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
         #region HealChecks
+
+        private bool CanHeal(Pawn pawn)
+        {
+            // Hediff imDiff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Immortal);
+            // if (imDiff != null && imDiff.Severity > 0.1f)
+            if (pawn.IsImmmortal(out Hediff imDiff) && imDiff.Severity > 0.1f)
+            {
+                return true;
+            }
+
+            if (pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_NemnirHigh) != null)
+            {
+                return true;
+            }
+
+            if (pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_KomaHigh) != null)
+            {
+                return true;
+            }
+
+            return false;
+        }
 
         private void CheckQuickening(Pawn pawn)
         {
@@ -1218,13 +1401,21 @@ namespace Immortals
             }
         }
 
+        private void clearPawn(Pawn pawn)
+        {
+            if (pawn != null)
+            {
+                if (this.deadPawns.Contains(pawn))
+                {
+                    this.deadPawns.Remove(pawn);
+                }
 
-
-
-
-
-
-
+                if (this.immortalPawns.Contains(pawn))
+                {
+                    this.immortalPawns.Remove(pawn);
+                }
+            }
+        }
 
         private void DoQuickening(Pawn giver, Pawn taker)
         {
@@ -1348,23 +1539,6 @@ namespace Immortals
             (quickening as GameCondition_Quickening).pawn = taker;
         }
 
-        private void clearPawn(Pawn pawn)
-        {
-            if (pawn != null)
-            {
-                if (this.deadPawns.Contains(pawn))
-                {
-                    this.deadPawns.Remove(pawn);
-                }
-
-                if (this.immortalPawns.Contains(pawn))
-                {
-                    this.immortalPawns.Remove(pawn);
-                }
-            }
-
-        }
-
         private float GetHealSpeed(Pawn pawn)
         {
             float speed = 0;
@@ -1413,39 +1587,12 @@ namespace Immortals
                 speed = baseHealSpeed * this.settings.baseHealSpeed * speed;
             }
 
-
             return speed;
-        }
-
-        private bool CanHeal(Pawn pawn)
-        {
-            // Hediff imDiff = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_Immortal);
-            // if (imDiff != null && imDiff.Severity > 0.1f)
-            if (pawn.IsImmmortal(out Hediff imDiff) && imDiff.Severity > 0.1f)
-            {
-                return true;
-            }
-
-            if (pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_NemnirHigh) != null)
-            {
-                return true;
-            }
-
-            if (pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf_Immortals.IH_KomaHigh) != null)
-            {
-                return true;
-            }
-
-            return false;
         }
 
         private float HealingFactor(Pawn pawn)
         {
             return Mathf.Pow(pawn.BodySize, this.settings.immortalHealingSizeFactor);
-        }
-        private float TransferFactor(Pawn giver, Pawn taker)
-        {
-            return Mathf.Pow(giver.BodySize / taker.BodySize, this.settings.immortalTransferSizeFactor);
         }
 
         private bool NeedPart(BodyPartRecord part)
@@ -1467,6 +1614,10 @@ namespace Immortals
             return false;
         }
 
+        private float TransferFactor(Pawn giver, Pawn taker)
+        {
+            return Mathf.Pow(giver.BodySize / taker.BodySize, this.settings.immortalTransferSizeFactor);
+        }
 
         /*
         public bool NeedToHeal(Hediff hediff, bool dead)
@@ -1542,97 +1693,6 @@ namespace Immortals
         */
 
         #endregion HealChecks
-        private void StartUp()
-        {
-            if (this.immortalPawns == null)
-            {
-                this.immortalPawns = new List<Pawn>();
-            }
-
-            if (this.deadPawns == null)
-            {
-                this.deadPawns = new List<Pawn>();
-            }
-
-            if (this.deadPawnMaps == null)
-            {
-                this.deadPawnMaps = new Dictionary<Pawn, Map>();
-            }
-
-            if (this.pawnsToRez == null)
-            {
-                this.pawnsToRez = new List<Pawn>();
-            }
-
-            if (this.stuntedPawns == null)
-            {
-                this.stuntedPawns = new List<Pawn>();
-            }
-
-            this.rareTick = 0;
-
-            this.settings = LoadedModManager.GetMod<Immortals_Mod>().GetSettings<Immortals_Settings>();
-            //ReLoadAilments();
-            DamageDef dmgDef = DamageDefOf.Blunt;
-            this.stuntedDmgDef = DefDatabase<DamageDef>.GetNamed("IH_internalBurn");
-            this.dmg = new DamageInfo(dmgDef, 1, 0);
-            this.sourceNeeds = new List<string>
-            {
-                "ConsciousnessSource",
-                "BloodPumpingSource",
-                "BloodFiltrationLiver",
-                "BreathingSource",
-                "MetabolismSource"
-            };
-
-            // immortalHediff           = HeDiffDefOf_Immortals.IH_Immortal;
-            // this.deathStasisHediff   = HeDiffDefOf_Immortals.IH_DeathStasis;
-            // this.stuntedHediff       = HeDiffDefOf_Immortals.IH_Stunted;
-            // this.stuntedProcHediff   = HeDiffDefOf_Immortals.IH_StuntedProc;
-            // this.stuntedBurnHediff   = HeDiffDefOf_Immortals.IH_Burn;
-            // this.timerHediff         = HeDiffDefOf_Immortals.IH_DeathTimer;
-            // this.growingHediff       = HeDiffDefOf_Immortals.IH_regrowing;
-            // this.missingHediff       = HediffDefOf.MissingBodyPart;
-            // this.adjustingHediff     = HeDiffDefOf_Immortals.IH_adjusting;
-            // this.returnedHediff      = HeDiffDefOf_Immortals.IH_revived;
-            // this.firstReturnedHediff = HeDiffDefOf_Immortals.IH_revivedFirst;
-            // this.hungerHediff        = HeDiffDefOf_Immortals.IH_theHunger;
-            // this.hungerHolderHediff  = HeDiffDefOf_Immortals.IH_hungerHolder;
-            // this.impaledHeart        = HeDiffDefOf_Immortals.IH_ImpaledHeart;
-
-            // this.nemnirHediff          = HeDiffDefOf_Immortals.IH_NemnirHigh;
-            // this.komaHediff            = HeDiffDefOf_Immortals.IH_KomaHigh;
-            // this.mortalisCrystalHediff = HeDiffDefOf_Immortals.IH_MortalisCrystalImplant;
-
-            // this.halfCyclerHediff = HeDiffDefOf_Immortals.CircadianHalfCycler;
-            this.recoverValues = new Dictionary<Pawn, Dictionary<float, float>>();
-
-            //getsPermanent = DefDatabase<HediffComp>.GetNamed("HediffComp_GetsPermanent");
-
-            IEnumerable<Pawn> allImmortalPawns = Find.CurrentMap.mapPawns.AllPawns.Concat(Find.WorldPawns.AllPawnsAliveOrDead);
-
-            foreach (Pawn pawn in allImmortalPawns)
-            {
-                if (pawn != null && (!pawn.Dead || pawn.Corpse != null) && this.CanHeal(pawn))
-                {
-                    if (Immortals_DesignatorUtility.HasConciousnessPart(pawn))
-                    {
-                        if (pawn.Dead)
-                        {
-                            this.AddDeadImmortal(pawn, false);
-                        }
-                        else
-                        {
-                            this.AddImmortal(pawn, false);
-                        }
-                    }
-                }
-            }
-
-            this.loaded = true;
-            this.firstTick = true;
-        }
-
 
         /*
         public void ReLoadAilments()

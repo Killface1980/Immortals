@@ -36,9 +36,12 @@ namespace Immortals
             {
                 return false;
             }
-
+            if (!pawn.IsImmmortal()) {
+                if (Find.CurrentMap.PlayerPawnsForStoryteller.FirstOrFallback(x => x.IsImmmortal(out Hediff immi) && immi.Severity > 0.5f) != null )
+                     return false;
+            }
             // Hediff immortality = pawn.health.hediffSet.GetFirstHediffOfDef(Immortal_Component.immortalHediff);
-            // bool corpseIsImmortal = (t as Corpse).InnerPawn.health.hediffSet.GetFirstHediffOfDef(Immortal_Component.immortalHediff) != null;
+            // bool corpseIsImmortal = (t as Corpse).InnerPawn.IsImmmortal();
             //
             // if (immortality == null)
             // {

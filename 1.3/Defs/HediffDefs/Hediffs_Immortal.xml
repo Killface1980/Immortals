@@ -9,6 +9,11 @@
     <label>Immortal</label>
     <isBad>false</isBad>
     <scenarioCanAdd>true</scenarioCanAdd>
+    <comps>
+        <li Class="Immortals.HediffCompProperties_DiscoverableImmortal">
+        <sendLetterWhenDiscovered>true</sendLetterWhenDiscovered>
+      </li>
+    </comps>
     <stages>
       <li>
         <label>FirstDeath</label>
@@ -76,6 +81,7 @@
       </li>
     </stages>
   </HediffDef>
+
   <HediffDef>
     <hediffClass>HediffWithComps</hediffClass>
     <defName>IH_Stunted</defName>

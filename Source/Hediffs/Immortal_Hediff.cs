@@ -2,7 +2,7 @@
 
 namespace Immortals
 {
-    public class Immortal_Hediff : Hediff
+    public class Immortal_Hediff : HediffWithComps
     {
         public override void Notify_PawnDied()
         {
